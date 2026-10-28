@@ -11,5 +11,19 @@ const UI = {
         if (name) {
             name.textContent = Player.name;
         }
+
+        const status = document.getElementById("hud-status");
+
+        if (status) {
+            status.textContent = "Exploring Lagos";
+        }
+    },
+
+    notify(message) {
+        if (typeof Game !== "undefined" && Game.showMessage) {
+            Game.showMessage(message);
+        } else {
+            console.log(message);
+        }
     }
 };
