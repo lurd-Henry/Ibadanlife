@@ -1,55 +1,117 @@
 const Player = {
     x: 480,
-    y: 300,
+    y: 400,
 
-    width: 22,
-    height: 30,
+    width: 26,
+    height: 34,
 
-    speed: 3,
+    speed: 180,
+    runMultiplier: 1.65,
+
+    gender: "male",
+    name: "Player",
 
     cash: 5000,
     respect: 0,
 
-    direction: "down",
+    color: "#c58b62",
 
-    reset() {
-        this.x = 480;
-        this.y = 300;
-        this.cash = 5000;
-        this.respect = 0;
-        this.direction = "down";
+    init() {
+        const saved = this.load();
+
+        if (saved) {
+            this.gender = saved.gender || "male";
+            this.name = saved.name || "Player";
+
+            this.cash = Number.isFinite(saved.cash)
+                ? saved.cash
+                : 5000;
+
+            this.respect = Number.isFinite(saved.respect)
+                ? saved.respect
+                : 0;
+
+            if (
+                Number.isFinite(saved.x) &&
+                Number.isFinite(saved.y)
+            ) {
+                this.x = saved.x;
+                this.y = saved.y;
+            }
+        }
+
+        this.updateAppearance();
     },
 
-    move(dx, dy, world) {
-        if (dx === 0 && dy === 0) return;
+    updateAppearance() {
+        this.color = this.gender === "female"
+            ? "#d9a17d"
+            : "#c58b62";
+    },
 
-        // Prevent diagonal movement from being faster.
-        const length = Math.hypot(dx, dy);
+    createCharacter(name, gender) {
+        this.name = name.trim() || "Player";
+        this.gender = gender === "female" ? "female" : "male";
 
-        dx = (dx / length) * this.speed;
-        dy = (dy / length) * this.speed;
+        this.x = 480;
+        this.y = 400;
 
-        const nextX = this.x + dx;
-        const nextY = this.y + dy;
+        this.cash = 5000;
+        this.respect = 0;
 
-        if (!world.isBlocked(nextX, this.y, this)) {
+        this.updateAppearance();
+        this.save();
+    },
+
+    move(dx, dy, deltaTime, isRunning = false) {
+        const magnitude = Math.hypot(dx, dy);
+
+        if (magnitude < 0.05) return;
+
+        // Normalise diagonal movement.
+        if (magnitude > 1) {
+            dx /= magnitude;
+            dy /= magnitude;
+        }
+
+        const multiplier = isRunning
+            ? this.runMultiplier
+            : 1;
+
+        const distance =
+            this.speed * multiplier * deltaTime;
+
+        const nextX = this.x + dx * distance;
+        const nextY = this.y + dy * distance;
+
+        if (
+            !World.isBlocked(
+                nextX,
+                this.y,
+                this.width,
+                this.height
+            )
+        ) {
             this.x = nextX;
         }
 
-        if (!world.isBlocked(this.x, nextY, this)) {
+        if (
+            !World.isBlocked(
+                this.x,
+                nextY,
+                this.width,
+                this.height
+            )
+        ) {
             this.y = nextY;
         }
 
-        if (Math.abs(dx) > Math.abs(dy)) {
-            this.direction = dx > 0 ? "right" : "left";
-        } else {
-            this.direction = dy > 0 ? "down" : "up";
-        }
+        this.save();
     },
 
-    draw(ctx, camera) {
-        const x = this.x - camera.x;
-        const y = this.y - camera.y;
+    draw(ctx) {
+        const x = this.x;
+        const y = this.y;
 
         // Shadow
         ctx.fillStyle = "rgba(0, 0, 0, 0.22)";
@@ -58,7 +120,7 @@ const Player = {
             x,
             y + 12,
             12,
-            5,
+            6,
             0,
             0,
             Math.PI * 2
@@ -66,28 +128,73 @@ const Player = {
         ctx.fill();
 
         // Legs
-        ctx.fillStyle = "#252e3c";
-        ctx.fillRect(x - 7, y + 7, 5, 10);
-        ctx.fillRect(x + 2, y + 7, 5, 10);
+        ctx.fillStyle = "#26332a";
+        ctx.fillRect(x - 7, y + 2, 5, 12);
+        ctx.fillRect(x + 2, y + 2, 5, 12);
 
         // Body
-        ctx.fillStyle = "#304c7a";
-        ctx.fillRect(x - 9, y - 5, 18, 15);
+        ctx.fillStyle = this.gender === "female"
+            ? "#c66ba5"
+            : "#c8ff54";
+
+        ctx.fillRect(x - 9, y - 9, 18, 15);
 
         // Head
-        ctx.fillStyle = "#b97851";
+        ctx.fillStyle = this.color;
         ctx.beginPath();
-        ctx.arc(x, y - 11, 8, 0, Math.PI * 2);
+        ctx.arc(x, y - 14, 8, 0, Math.PI * 2);
         ctx.fill();
 
         // Hair
-        ctx.fillStyle = "#25221f";
-        ctx.fillRect(x - 7, y - 18, 14, 5);
+        ctx.fillStyle = "#30251e";
+        ctx.beginPath();
+        ctx.arc(
+            x,
+            y - 17,
+            this.gender === "female" ? 9 : 8,
+            Math.PI,
+            Math.PI * 2
+        );
+        ctx.fill();
 
-        // Name marker
-        ctx.fillStyle = "#ffffff";
-        ctx.font = "bold 10px Arial";
+        // Name
+        ctx.font = "bold 11px Arial";
         ctx.textAlign = "center";
-        ctx.fillText("YOU", x, y - 26);
+        ctx.textBaseline = "alphabetic";
+
+        ctx.fillStyle = "rgba(0, 0, 0, 0.65)";
+        ctx.fillText(this.name, x + 1, y - 27 + 1);
+
+        ctx.fillStyle = "#ffffff";
+        ctx.fillText(this.name, x, y - 27);
+    },
+
+    save() {
+        try {
+            localStorage.setItem(
+                "lagosLifePlayer",
+                JSON.stringify({
+                    name: this.name,
+                    gender: this.gender,
+                    cash: this.cash,
+                    respect: this.respect,
+                    x: this.x,
+                    y: this.y
+                })
+            );
+        } catch (error) {
+            console.warn("Player save unavailable:", error);
+        }
+    },
+
+    load() {
+        try {
+            const saved = localStorage.getItem("lagosLifePlayer");
+
+            return saved ? JSON.parse(saved) : null;
+        } catch (error) {
+            console.warn("Player save unavailable:", error);
+            return null;
+        }
     }
 };
