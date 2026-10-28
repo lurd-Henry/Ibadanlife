@@ -2,101 +2,123 @@ const Game = {
     canvas: null,
     ctx: null,
 
-    keys: new Set(),
-
-    camera: {
-        x: 0,
-        y: 0
-    },
-
     running: false,
-    elapsed: 0,
+    paused: false,
+
     lastTime: 0,
-    animationId: null,
+    cameraX: 0,
+    cameraY: 0,
+
+    elapsed: 0,
+
+    keys: {},
+
+    isRunning: false,
 
     init() {
         this.canvas = document.getElementById("game-canvas");
         this.ctx = this.canvas.getContext("2d");
 
+        Joystick.init();
         this.bindControls();
+        this.resizeCanvas();
 
-        this.running = true;
+        window.addEventListener(
+            "resize",
+            () => this.resizeCanvas()
+        );
 
-        this.lastTime = performance.now();
+        Player.init();
 
-        this.loop();
+        this.running = false;
+        this.paused = false;
 
-        UI.update();
+        this.renderInitialWorld();
+    },
 
-        UI.notify(
-            "Welcome to Lagos. Find the yellow marker to start your first job."
+    resizeCanvas() {
+        if (!this.canvas) return;
+
+        const rect = this.canvas.getBoundingClientRect();
+
+        if (!rect.width || !rect.height) return;
+
+        const dpr = Math.min(
+            window.devicePixelRatio || 1,
+            2
+        );
+
+        this.canvas.width = Math.round(rect.width * dpr);
+        this.canvas.height = Math.round(rect.height * dpr);
+
+        this.ctx.setTransform(
+            dpr,
+            0,
+            0,
+            dpr,
+            0,
+            0
         );
     },
 
     bindControls() {
-        window.addEventListener("keydown", event => {
+        window.addEventListener("keydown", (event) => {
             const key = event.key.toLowerCase();
 
             if (
-                ["arrowup", "arrowdown", "arrowleft", "arrowright",
-                 "w", "a", "s", "d", " "].includes(key)
+                [
+                    "arrowup",
+                    "arrowdown",
+                    "arrowleft",
+                    "arrowright",
+                    " "
+                ].includes(key)
             ) {
                 event.preventDefault();
             }
 
-            this.keys.add(key);
-
-            if (key === "e") {
-                Missions.interact();
-            }
+            this.keys[key] = true;
 
             if (key === "escape") {
                 this.togglePause();
             }
+
+            if (key === "e") {
+                this.interact();
+            }
         });
 
-        window.addEventListener("keyup", event => {
-            this.keys.delete(event.key.toLowerCase());
+        window.addEventListener("keyup", (event) => {
+            this.keys[event.key.toLowerCase()] = false;
         });
 
         window.addEventListener("blur", () => {
-            this.keys.clear();
+            this.keys = {};
+            this.isRunning = false;
         });
 
-        document.querySelectorAll("[data-move]").forEach(button => {
-            const direction = button.dataset.move;
-
-            const keys = {
-                up: "arrowup",
-                down: "arrowdown",
-                left: "arrowleft",
-                right: "arrowright"
-            };
-
-            const key = keys[direction];
-
-            const press = event => {
-                event.preventDefault();
-
-                this.keys.add(key);
-            };
-
-            const release = () => {
-                this.keys.delete(key);
-            };
-
-            button.addEventListener("pointerdown", press);
-
-            button.addEventListener("pointerup", release);
-
-            button.addEventListener("pointercancel", release);
-
-            button.addEventListener("pointerleave", release);
-        });
-
-        document.getElementById("interact-button")
+        document.getElementById("start-game")
             .addEventListener("click", () => {
-                Missions.interact();
+                this.startNewGame();
+            });
+
+        document.querySelectorAll(".gender-option")
+            .forEach((button) => {
+                button.addEventListener("click", () => {
+                    document.querySelectorAll(".gender-option")
+                        .forEach((item) => {
+                            item.classList.remove("selected");
+                            item.setAttribute("aria-pressed", "false");
+                        });
+
+                    button.classList.add("selected");
+                    button.setAttribute("aria-pressed", "true");
+                });
+            });
+
+        document.getElementById("fullscreen-button")
+            .addEventListener("click", () => {
+                this.toggleFullscreen();
             });
 
         document.getElementById("pause-button")
@@ -104,122 +126,253 @@ const Game = {
                 this.togglePause();
             });
 
-        document.getElementById("resume-button")
+        document.getElementById("resume-game")
             .addEventListener("click", () => {
-                this.togglePause();
+                this.togglePause(false);
             });
 
-        document.getElementById("job-button")
-            .addEventListener("click", () => {
-                UI.notify(
-                    "Your first delivery job is marked in yellow on the map."
-                );
-            });
+        const runButton = document.getElementById("run-button");
 
-        document.getElementById("map-button")
+        runButton.addEventListener("pointerdown", (event) => {
+            event.preventDefault();
+            this.isRunning = true;
+        });
+
+        const stopRunning = () => {
+            this.isRunning = false;
+        };
+
+        runButton.addEventListener("pointerup", stopRunning);
+        runButton.addEventListener("pointercancel", stopRunning);
+        runButton.addEventListener("lostpointercapture", stopRunning);
+
+        window.addEventListener("pointerup", stopRunning);
+        window.addEventListener("blur", stopRunning);
+
+        document.getElementById("interact-button")
             .addEventListener("click", () => {
-                UI.notify(
-                    `You are at coordinates X: ${Math.round(Player.x)}, Y: ${Math.round(Player.y)}.`
-                );
+                this.interact();
             });
     },
 
-    togglePause() {
-        this.running = !this.running;
+    startNewGame() {
+        const nameInput = document.getElementById("character-name");
 
-        document.getElementById("pause-overlay")
-            .classList.toggle("hidden", this.running);
+        const selected = document.querySelector(
+            ".gender-option.selected"
+        );
 
-        document.getElementById("pause-button").textContent =
-            this.running ? "II" : "▶";
+        const name = nameInput.value.trim() || "Player";
+        const gender = selected?.dataset.gender || "male";
 
-        if (this.running) {
-            this.lastTime = performance.now();
+        Player.createCharacter(name, gender);
 
-            this.animationId = requestAnimationFrame(
-                time => this.loop(time)
-            );
-        } else {
-            cancelAnimationFrame(this.animationId);
-            this.keys.clear();
-        }
+        document.getElementById("character-screen")
+            .classList.add("hidden");
+
+        document.getElementById("game-screen")
+            .classList.remove("hidden");
+
+        this.resizeCanvas();
+        this.updateHUD();
+
+        this.running = true;
+        this.paused = false;
+        this.lastTime = 0;
+        this.elapsed = 0;
+
+        this.renderInitialWorld();
+
+        requestAnimationFrame((time) => this.loop(time));
     },
 
-    update(delta) {
+    loop(timestamp) {
         if (!this.running) return;
 
+        if (this.paused) return;
+
+        const deltaTime = this.lastTime
+            ? Math.min((timestamp - this.lastTime) / 1000, 0.05)
+            : 0;
+
+        this.lastTime = timestamp;
+        this.elapsed += deltaTime;
+
+        this.update(deltaTime);
+        this.render();
+
+        requestAnimationFrame((time) => this.loop(time));
+    },
+
+    update(deltaTime) {
         let dx = 0;
         let dy = 0;
 
-        if (this.keys.has("arrowup") || this.keys.has("w")) {
-            dy -= 1;
-        }
+        if (this.keys["arrowup"] || this.keys["w"]) dy -= 1;
+        if (this.keys["arrowdown"] || this.keys["s"]) dy += 1;
+        if (this.keys["arrowleft"] || this.keys["a"]) dx -= 1;
+        if (this.keys["arrowright"] || this.keys["d"]) dx += 1;
 
-        if (this.keys.has("arrowdown") || this.keys.has("s")) {
-            dy += 1;
-        }
+        const joystickDirection = Joystick.getDirection();
 
-        if (this.keys.has("arrowleft") || this.keys.has("a")) {
-            dx -= 1;
-        }
+        dx += joystickDirection.x;
+        dy += joystickDirection.y;
 
-        if (this.keys.has("arrowright") || this.keys.has("d")) {
-            dx += 1;
-        }
+        const moving = Math.hypot(dx, dy) > 0.05;
 
-        Player.move(dx * delta, dy * delta, World);
+        Player.move(
+            dx,
+            dy,
+            deltaTime,
+            this.isRunning
+        );
 
-        this.elapsed += delta / 1000;
+        this.cameraX = Player.x - this.canvas.clientWidth / 2;
+        this.cameraY = Player.y - this.canvas.clientHeight / 2;
 
-        // Keep the camera near the player.
-        this.camera.x = Math.max(
+        this.cameraX = Math.max(
             0,
             Math.min(
-                World.width - this.canvas.width,
-                Player.x - this.canvas.width / 2
+                this.cameraX,
+                World.width - this.canvas.clientWidth
             )
         );
 
-        this.camera.y = Math.max(
+        this.cameraY = Math.max(
             0,
             Math.min(
-                World.height - this.canvas.height,
-                Player.y - this.canvas.height / 2
+                this.cameraY,
+                World.height - this.canvas.clientHeight
             )
         );
+
+        this.updateHUD();
+
+        if (typeof UI !== "undefined" && UI.update) {
+            UI.update();
+        }
+
+        if (typeof AudioSystem !== "undefined") {
+            AudioSystem.setWalking(moving);
+        }
     },
 
-    draw() {
-        World.draw(
-            this.ctx,
-            this.camera,
-            this.canvas
-        );
+    render() {
+        const ctx = this.ctx;
 
-        Player.draw(
-            this.ctx,
-            this.camera
-        );
+        const width = this.canvas.clientWidth;
+        const height = this.canvas.clientHeight;
+
+        ctx.clearRect(0, 0, width, height);
+
+        ctx.save();
+
+        ctx.translate(-this.cameraX, -this.cameraY);
+
+        World.draw(ctx);
+
+        Player.draw(ctx);
+
+        ctx.restore();
     },
 
-    loop(time = performance.now()) {
+    renderInitialWorld() {
+        if (!this.ctx || !this.canvas) return;
+
+        const ctx = this.ctx;
+        const width = this.canvas.clientWidth;
+        const height = this.canvas.clientHeight;
+
+        ctx.clearRect(0, 0, width, height);
+
+        ctx.save();
+
+        ctx.translate(-this.cameraX, -this.cameraY);
+
+        World.draw(ctx);
+        Player.draw(ctx);
+
+        ctx.restore();
+    },
+
+    updateHUD() {
+        const nameElement = document.getElementById("hud-player-name");
+        const cashElement = document.getElementById("hud-cash");
+        const avatarElement = document.getElementById("player-avatar");
+
+        if (nameElement) nameElement.textContent = Player.name;
+
+        if (cashElement) {
+            cashElement.textContent =
+                "₦" + Player.cash.toLocaleString("en-NG");
+        }
+
+        if (avatarElement) {
+            avatarElement.textContent =
+                Player.gender === "female" ? "♀" : "♂";
+        }
+    },
+
+    interact() {
+        if (!this.running || this.paused) return;
+
+        if (typeof Missions !== "undefined" && Missions.interact) {
+            Missions.interact();
+        } else {
+            this.showMessage("No interaction available here yet.");
+        }
+    },
+
+    showMessage(message) {
+        const element = document.getElementById("game-message");
+
+        element.textContent = message;
+        element.classList.remove("hidden");
+
+        clearTimeout(this.messageTimer);
+
+        this.messageTimer = setTimeout(() => {
+            element.classList.add("hidden");
+        }, 2200);
+    },
+
+    togglePause(forceState) {
         if (!this.running) return;
 
-        const delta = Math.min(
-            time - this.lastTime,
-            40
-        );
+        this.paused = typeof forceState === "boolean"
+            ? forceState
+            : !this.paused;
 
-        this.lastTime = time;
+        document.getElementById("pause-overlay")
+            .classList.toggle("hidden", !this.paused);
 
-        this.update(delta);
+        if (this.paused) {
+            if (typeof AudioSystem !== "undefined") {
+                AudioSystem.setWalking(false);
+            }
 
-        this.draw();
+            Joystick.reset();
+            this.isRunning = false;
+            this.lastTime = 0;
+        } else {
+            this.lastTime = 0;
+            requestAnimationFrame((time) => this.loop(time));
+        }
+    },
 
-        UI.update();
+    async toggleFullscreen() {
+        try {
+            if (!document.fullscreenElement) {
+                await document.documentElement.requestFullscreen?.();
+            } else {
+                await document.exitFullscreen?.();
+            }
+        } catch (error) {
+            console.warn("Fullscreen unavailable:", error);
 
-        this.animationId = requestAnimationFrame(
-            nextTime => this.loop(nextTime)
-        );
+            this.showMessage(
+                "Fullscreen isn't supported in this browser."
+            );
+        }
     }
 };
