@@ -1,0 +1,184 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport"
+          content="width=device-width, initial-scale=1.0">
+
+    <meta name="theme-color" content="#101510">
+
+    <title>Lagos Life | Open World</title>
+
+    <link rel="stylesheet" href="css/style.css">
+    <link rel="stylesheet" href="css/game.css">
+</head>
+
+<body>
+
+    <div class="game-app">
+
+        <!-- TOP BAR -->
+        <header class="topbar">
+            <a href="#" class="brand">
+                LAGOS<span>LIFE</span>
+            </a>
+
+            <div class="game-time">
+                <span class="status-dot"></span>
+                <span id="game-time">DAY 01 · 08:00 AM</span>
+            </div>
+
+            <button id="pause-button" class="icon-button">
+                II
+            </button>
+        </header>
+
+        <!-- PLAYER STATUS -->
+        <section class="status-bar">
+
+            <div class="status-card">
+                <span class="label">CASH BALANCE</span>
+                <strong id="cash">₦5,000</strong>
+            </div>
+
+            <div class="status-card">
+                <span class="label">RESPECT</span>
+                <strong id="respect">0 REP</strong>
+            </div>
+
+            <div class="status-card">
+                <span class="label">LOCATION</span>
+                <strong id="location">Ikeja</strong>
+            </div>
+
+        </section>
+
+        <!-- GAME WORLD -->
+        <main class="game-container">
+
+            <div class="game-heading">
+                <div>
+                    <span class="eyebrow">YOUR CITY. YOUR RULES.</span>
+                    <h1>Lagos Streets</h1>
+                </div>
+
+                <span class="world-status">OPEN WORLD</span>
+            </div>
+
+            <div class="canvas-wrapper">
+
+                <canvas
+                    id="game-canvas"
+                    width="960"
+                    height="600"
+                    tabindex="0"
+                    aria-label="Lagos Life game world. Use the arrow keys or WASD to move."
+                ></canvas>
+
+                <div class="world-overlay">
+                    <span>● LIVE WORLD</span>
+                    <span id="weather">SUNNY · 28°C</span>
+                </div>
+
+                <div id="pause-overlay" class="pause-overlay hidden">
+                    <div>
+                        <h2>GAME PAUSED</h2>
+                        <p>Take a breath, boss.</p>
+                        <button id="resume-button">RESUME GAME</button>
+                    </div>
+                </div>
+
+            </div>
+
+            <!-- MISSION -->
+            <section class="mission-panel">
+
+                <div class="mission-info">
+                    <span class="label">CURRENT MISSION</span>
+                    <h2 id="mission-title">
+                        Your First Day in Lagos
+                    </h2>
+
+                    <p id="mission-description">
+                        Find the yellow marker on the street
+                        and interact with it to start your journey.
+                    </p>
+                </div>
+
+                <button id="interact-button" class="primary-button">
+                    INTERACT
+                </button>
+
+            </section>
+
+            <!-- GAME CONTROLS -->
+            <section class="game-bottom">
+
+                <div class="movement-panel">
+                    <span class="label">MOVEMENT</span>
+
+                    <div class="movement-controls">
+
+                        <button data-move="up" aria-label="Move up">
+                            ▲
+                        </button>
+
+                        <button data-move="left" aria-label="Move left">
+                            ◀
+                        </button>
+
+                        <button data-move="down" aria-label="Move down">
+                            ▼
+                        </button>
+
+                        <button data-move="right" aria-label="Move right">
+                            ▶
+                        </button>
+
+                    </div>
+
+                    <small>WASD / ARROW KEYS</small>
+                </div>
+
+                <div class="game-actions">
+                    <button id="job-button" class="secondary-button">
+                        💼 Find Work
+                    </button>
+
+                    <button id="map-button" class="secondary-button">
+                        🗺 City Map
+                    </button>
+                </div>
+
+            </section>
+
+            <!-- NOTIFICATIONS -->
+            <section class="notification-panel">
+                <span class="notification-icon">✦</span>
+
+                <div>
+                    <strong>WORLD FEED</strong>
+                    <p id="notification">
+                        Welcome to Lagos, boss. Make your own story.
+                    </p>
+                </div>
+            </section>
+
+        </main>
+
+        <footer>
+            LAGOS LIFE © 2026 · PROTOTYPE 0.1
+        </footer>
+
+    </div>
+
+    <!-- GAME SYSTEMS -->
+    <script src="js/player.js"></script>
+    <script src="js/world.js"></script>
+    <script src="js/missions.js"></script>
+    <script src="js/ui.js"></script>
+    <script src="js/game.js"></script>
+    <script src="js/app.js"></script>
+
+</body>
+</html>
