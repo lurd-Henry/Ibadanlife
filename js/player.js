@@ -1,6 +1,6 @@
 const Player = {
     x: 480,
-    y: 400,
+    y: 800,
 
     width: 26,
     height: 34,
@@ -25,7 +25,7 @@ const Player = {
 
             this.cash = Number.isFinite(saved.cash)
                 ? saved.cash
-                : 5000;
+                : 50000;
 
             this.respect = Number.isFinite(saved.respect)
                 ? saved.respect
@@ -54,7 +54,7 @@ const Player = {
         this.gender = gender === "female" ? "female" : "male";
 
         this.x = 480;
-        this.y = 400;
+        this.y = 800;
 
         this.cash = 5000;
         this.respect = 0;
