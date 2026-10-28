@@ -55,9 +55,10 @@ const World = {
         }
     ],
 
-    isBlocked(x, y, player) {
-        const halfW = player.width / 2;
-        const halfH = player.height / 2;
+    // Check world boundaries and building collisions.
+    isBlocked(x, y, width, height) {
+        const halfW = width / 2;
+        const halfH = height / 2;
 
         if (
             x - halfW < 0 ||
@@ -78,16 +79,12 @@ const World = {
         });
     },
 
-    draw(ctx, camera, canvas) {
-        // Ground
+    draw(ctx) {
+        // Draw the ground across the entire world.
         ctx.fillStyle = "#b4c69a";
-        ctx.fillRect(0, 0, canvas.width, canvas.height);
+        ctx.fillRect(0, 0, this.width, this.height);
 
-        ctx.save();
-
-        ctx.translate(-camera.x, -camera.y);
-
-        // Decorative grass details
+        // Decorative grass details.
         ctx.fillStyle = "#a4b88c";
 
         for (let x = 20; x < this.width; x += 80) {
@@ -96,11 +93,11 @@ const World = {
             }
         }
 
-        // Main horizontal road
+        // Horizontal road.
         ctx.fillStyle = "#737b77";
         ctx.fillRect(0, 600, this.width, 110);
 
-        // Road markings
+        // Horizontal road markings.
         ctx.strokeStyle = "#eee0a7";
         ctx.lineWidth = 3;
         ctx.setLineDash([30, 25]);
@@ -112,10 +109,11 @@ const World = {
 
         ctx.setLineDash([]);
 
-        // Main vertical road
+        // Vertical road.
         ctx.fillStyle = "#737b77";
         ctx.fillRect(650, 0, 100, this.height);
 
+        // Vertical road markings.
         ctx.strokeStyle = "#eee0a7";
         ctx.lineWidth = 3;
         ctx.setLineDash([30, 25]);
@@ -127,9 +125,9 @@ const World = {
 
         ctx.setLineDash([]);
 
-        // Buildings
+        // Draw every building.
         this.buildings.forEach(building => {
-            // Shadow
+            // Shadow.
             ctx.fillStyle = "#8b967f";
 
             ctx.fillRect(
@@ -139,7 +137,7 @@ const World = {
                 building.height
             );
 
-            // Building body
+            // Building body.
             ctx.fillStyle = building.color;
 
             ctx.fillRect(
@@ -149,7 +147,7 @@ const World = {
                 building.height
             );
 
-            // Roof border
+            // Roof border.
             ctx.fillStyle = "#796a53";
 
             ctx.fillRect(
@@ -159,7 +157,7 @@ const World = {
                 8
             );
 
-            // Windows
+            // Windows.
             ctx.fillStyle = "#819f9b";
 
             for (
@@ -175,7 +173,7 @@ const World = {
                 );
             }
 
-            // Door
+            // Door.
             ctx.fillStyle = "#705540";
 
             ctx.fillRect(
@@ -185,7 +183,7 @@ const World = {
                 35
             );
 
-            // Building name
+            // Building name.
             ctx.fillStyle = "#272c24";
             ctx.font = "bold 13px Arial";
             ctx.textAlign = "center";
@@ -197,7 +195,7 @@ const World = {
             );
         });
 
-        // Job markers
+        // Draw available job markers.
         this.jobs.forEach(job => {
             if (job.completed) return;
 
@@ -205,13 +203,11 @@ const World = {
 
             ctx.fillStyle = "rgba(245, 205, 58, 0.25)";
             ctx.beginPath();
-
             ctx.arc(job.x, job.y, pulse + 8, 0, Math.PI * 2);
             ctx.fill();
 
             ctx.fillStyle = "#f5cd3a";
             ctx.beginPath();
-
             ctx.arc(job.x, job.y, pulse / 2, 0, Math.PI * 2);
             ctx.fill();
 
@@ -221,7 +217,5 @@ const World = {
 
             ctx.fillText("₦", job.x, job.y + 5);
         });
-
-        ctx.restore();
     }
 };
