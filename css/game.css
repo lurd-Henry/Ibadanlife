@@ -1,0 +1,83 @@
+.canvas-wrapper {
+    position: relative;
+    overflow: hidden;
+    width: 100%;
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    background: #a5ba8d;
+}
+
+#game-canvas {
+    display: block;
+    width: 100%;
+    height: auto;
+    image-rendering: pixelated;
+    touch-action: none;
+    outline-offset: -3px;
+}
+
+.world-overlay {
+    position: absolute;
+    top: 12px;
+    left: 12px;
+    right: 12px;
+    display: flex;
+    justify-content: space-between;
+    gap: 10px;
+    pointer-events: none;
+}
+
+.world-overlay span {
+    background: rgba(15, 22, 15, 0.88);
+    color: #fff;
+    padding: 8px 10px;
+    border-radius: 6px;
+    font-size: 10px;
+    letter-spacing: 0.5px;
+}
+
+.pause-overlay {
+    position: absolute;
+    inset: 0;
+    display: grid;
+    place-items: center;
+    background: rgba(12, 17, 12, 0.88);
+    text-align: center;
+    padding: 20px;
+}
+
+.pause-overlay h2 {
+    font-size: 26px;
+    margin-bottom: 10px;
+}
+
+.pause-overlay p {
+    color: var(--muted);
+    margin-bottom: 20px;
+}
+
+.pause-overlay button {
+    padding: 13px 20px;
+    background: var(--accent);
+    color: #15190e;
+    border: none;
+    border-radius: 8px;
+    font-weight: 800;
+}
+
+.hidden {
+    display: none !important;
+}
+
+@media (max-width: 600px) {
+    .world-overlay {
+        top: 7px;
+        left: 7px;
+        right: 7px;
+    }
+
+    .world-overlay span {
+        padding: 6px 7px;
+        font-size: 9px;
+    }
+}
