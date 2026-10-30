@@ -20,12 +20,12 @@ const Player = {
         const saved = this.load();
 
         if (saved) {
-            this.gender = saved.gender || "male";
             this.name = saved.name || "Player";
+            this.gender = saved.gender || "male";
 
             this.cash = Number.isFinite(saved.cash)
                 ? saved.cash
-                : 50000;
+                : 5000;
 
             this.respect = Number.isFinite(saved.respect)
                 ? saved.respect
@@ -40,6 +40,17 @@ const Player = {
             }
         }
 
+        // Recover invalid or obstructed saved positions.
+        if (World.isBlocked(
+            this.x,
+            this.y,
+            this.width,
+            this.height
+        )) {
+            this.x = 480;
+            this.y = 800;
+        }
+
         this.updateAppearance();
     },
 
@@ -51,7 +62,9 @@ const Player = {
 
     createCharacter(name, gender) {
         this.name = name.trim() || "Player";
-        this.gender = gender === "female" ? "female" : "male";
+        this.gender = gender === "female"
+            ? "female"
+            : "male";
 
         this.x = 480;
         this.y = 800;
@@ -63,48 +76,59 @@ const Player = {
         this.save();
     },
 
-    move(dx, dy, deltaTime, isRunning = false) {
-        const magnitude = Math.hypot(dx, dy);
+    move(dx, dy, dt, running = false) {
+        const length = Math.hypot(dx, dy);
 
-        if (magnitude < 0.05) return;
+        if (length < 0.05) return;
 
-        // Normalise diagonal movement.
-        if (magnitude > 1) {
-            dx /= magnitude;
-            dy /= magnitude;
+        if (length > 1) {
+            dx /= length;
+            dy /= length;
         }
 
-        const multiplier = isRunning
-            ? this.runMultiplier
-            : 1;
+        const speed = this.speed *
+            (running ? this.runMultiplier : 1);
 
-        const distance =
-            this.speed * multiplier * deltaTime;
+        const distance = speed * dt;
 
         const nextX = this.x + dx * distance;
         const nextY = this.y + dy * distance;
 
-        if (
-            !World.isBlocked(
+        let blockedX;
+        let blockedY;
+
+        if (Interiors.active) {
+            blockedX = Interiors.isBlocked(
                 nextX,
                 this.y,
                 this.width,
                 this.height
-            )
-        ) {
-            this.x = nextX;
-        }
+            );
 
-        if (
-            !World.isBlocked(
+            blockedY = Interiors.isBlocked(
                 this.x,
                 nextY,
                 this.width,
                 this.height
-            )
-        ) {
-            this.y = nextY;
+            );
+        } else {
+            blockedX = World.isBlocked(
+                nextX,
+                this.y,
+                this.width,
+                this.height
+            );
+
+            blockedY = World.isBlocked(
+                this.x,
+                nextY,
+                this.width,
+                this.height
+            );
         }
+
+        if (!blockedX) this.x = nextX;
+        if (!blockedY) this.y = nextY;
 
         this.save();
     },
@@ -113,59 +137,35 @@ const Player = {
         const x = this.x;
         const y = this.y;
 
-        // Shadow
-        ctx.fillStyle = "rgba(0, 0, 0, 0.22)";
+        ctx.fillStyle = "rgba(0,0,0,0.2)";
         ctx.beginPath();
-        ctx.ellipse(
-            x,
-            y + 12,
-            12,
-            6,
-            0,
-            0,
-            Math.PI * 2
-        );
+        ctx.ellipse(x, y + 12, 12, 6, 0, 0, Math.PI * 2);
         ctx.fill();
 
-        // Legs
         ctx.fillStyle = "#26332a";
         ctx.fillRect(x - 7, y + 2, 5, 12);
         ctx.fillRect(x + 2, y + 2, 5, 12);
 
-        // Body
         ctx.fillStyle = this.gender === "female"
             ? "#c66ba5"
             : "#c8ff54";
 
         ctx.fillRect(x - 9, y - 9, 18, 15);
 
-        // Head
         ctx.fillStyle = this.color;
         ctx.beginPath();
         ctx.arc(x, y - 14, 8, 0, Math.PI * 2);
         ctx.fill();
 
-        // Hair
         ctx.fillStyle = "#30251e";
         ctx.beginPath();
-        ctx.arc(
-            x,
-            y - 17,
-            this.gender === "female" ? 9 : 8,
-            Math.PI,
-            Math.PI * 2
-        );
+        ctx.arc(x, y - 17, 8, Math.PI, Math.PI * 2);
         ctx.fill();
 
-        // Name
         ctx.font = "bold 11px Arial";
         ctx.textAlign = "center";
-        ctx.textBaseline = "alphabetic";
 
-        ctx.fillStyle = "rgba(0, 0, 0, 0.65)";
-        ctx.fillText(this.name, x + 1, y - 27 + 1);
-
-        ctx.fillStyle = "#ffffff";
+        ctx.fillStyle = "#fff";
         ctx.fillText(this.name, x, y - 27);
     },
 
@@ -183,17 +183,16 @@ const Player = {
                 })
             );
         } catch (error) {
-            console.warn("Player save unavailable:", error);
+            console.warn(error);
         }
     },
 
     load() {
         try {
-            const saved = localStorage.getItem("lagosLifePlayer");
-
-            return saved ? JSON.parse(saved) : null;
+            return JSON.parse(
+                localStorage.getItem("lagosLifePlayer")
+            );
         } catch (error) {
-            console.warn("Player save unavailable:", error);
             return null;
         }
     }
