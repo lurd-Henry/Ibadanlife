@@ -255,26 +255,49 @@ const Game = {
         if (typeof AudioSystem !== "undefined") {
             AudioSystem.setWalking(moving);
         }
+        if (Interiors.active) {
+    this.cameraX = 0;
+    this.cameraY = 0;
+
+    this.updateHUD();
+
+    return;
+}
+
     },
 
     render() {
-        const ctx = this.ctx;
+    const ctx = this.ctx;
 
-        const width = this.canvas.clientWidth;
-        const height = this.canvas.clientHeight;
+    const width = this.canvas.clientWidth;
+    const height = this.canvas.clientHeight;
 
-        ctx.clearRect(0, 0, width, height);
+    ctx.clearRect(0, 0, width, height);
 
+    if (Interiors.active) {
         ctx.save();
 
-        ctx.translate(-this.cameraX, -this.cameraY);
+        ctx.scale(
+            width / 800,
+            height / 600
+        );
 
-        World.draw(ctx);
-
-        Player.draw(ctx);
+        Interiors.draw(ctx);
 
         ctx.restore();
-    },
+
+        return;
+    }
+
+    ctx.save();
+
+    ctx.translate(-this.cameraX, -this.cameraY);
+
+    World.draw(ctx);
+    Player.draw(ctx);
+
+    ctx.restore();
+},
 
     renderInitialWorld() {
         if (!this.ctx || !this.canvas) return;
@@ -314,14 +337,30 @@ const Game = {
     },
 
     interact() {
-        if (!this.running || this.paused) return;
+    if (!this.running || this.paused) return;
 
-        if (typeof Missions !== "undefined" && Missions.interact) {
-            Missions.interact();
-        } else {
-            this.showMessage("No interaction available here yet.");
-        }
-    },
+    if (Interiors.active) {
+        Interiors.interact();
+        return;
+    }
+
+    const building = World.getNearbyBuilding();
+
+    if (building) {
+        Interiors.enter(building);
+        return;
+    }
+
+    if (
+        typeof Missions !== "undefined" &&
+        Missions.interact
+    ) {
+        Missions.interact();
+        return;
+    }
+
+    this.showMessage("Nothing to interact with here.");
+},
 
     showMessage(message) {
         const element = document.getElementById("game-message");
