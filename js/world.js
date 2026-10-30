@@ -75,7 +75,22 @@ const World = {
             interior: "pharmacy",
             entranceX: 1575,
             entranceY: 570
-        }
+        },
+        {
+    x: 1850,
+    y: 370,
+    width: 250,
+    height: 170,
+
+    name: "LAGOS NIGHTLIFE",
+    color: "#493c69",
+
+    enterable: true,
+    interior: "club",
+
+    entranceX: 1975,
+    entranceY: 565
+}
     ],
 
     jobs: [
