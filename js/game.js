@@ -285,24 +285,26 @@ if (typeof AudioSystem !== "undefined") {
 },
 
     renderInitialWorld() {
-        if (!this.ctx || !this.canvas) return;
+if (!this.ctx || !this.canvas) return;
 
-        const ctx = this.ctx;
-        const width = this.canvas.clientWidth;
-        const height = this.canvas.clientHeight;
+const ctx = this.ctx;
+const width = this.canvas.clientWidth;
+const height = this.canvas.clientHeight;
+ctx.clearRect(0, 0, width, height);
+if (Interiors.active) {
+    ctx.save();
+    ctx.scale(width / 800, height / 600);
+    Interiors.draw(ctx);
+    ctx.restore();
+    return;
+}
+ctx.save();
+ctx.translate(-this.cameraX, -this.cameraY);
+World.draw(ctx);
+Player.draw(ctx);
+ctx.restore();
 
-        ctx.clearRect(0, 0, width, height);
-
-        ctx.save();
-
-        ctx.translate(-this.cameraX, -this.cameraY);
-
-        World.draw(ctx);
-        Player.draw(ctx);
-
-        ctx.restore();
-    },
-
+},
     updateHUD() {
         const nameElement = document.getElementById("hud-player-name");
         const cashElement = document.getElementById("hud-cash");
