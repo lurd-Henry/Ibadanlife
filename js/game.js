@@ -252,56 +252,33 @@ if (typeof AudioSystem !== "undefined") {
 },
 
     render() {
-    const ctx = this.ctx;
-
-    const width = this.canvas.clientWidth;
-    const height = this.canvas.clientHeight;
-
-    ctx.clearRect(0, 0, width, height);
-
-    if (Interiors.active) {
-        ctx.save();
-
-        ctx.scale(
-            width / 800,
-            height / 600
-        );
-
-        Interiors.draw(ctx);
-
-        ctx.restore();
-
-        return;
-    }
-
-    ctx.save();
-
-    ctx.translate(-this.cameraX, -this.cameraY);
-
-    World.draw(ctx);
-    Player.draw(ctx);
-
-    ctx.restore();
-},
-
-    renderInitialWorld() {
-if (!this.ctx || !this.canvas) return;
-
 const ctx = this.ctx;
 const width = this.canvas.clientWidth;
 const height = this.canvas.clientHeight;
+
 ctx.clearRect(0, 0, width, height);
+ctx.save();
 if (Interiors.active) {
-    ctx.save();
     ctx.scale(width / 800, height / 600);
     Interiors.draw(ctx);
-    ctx.restore();
-    return;
+} else {
+    ctx.translate(-this.cameraX, -this.cameraY);
+    World.draw(ctx);
+    Player.draw(ctx);
+    // TEMPORARY: Draw a red circle around the player.
+    ctx.fillStyle = "red";
+    ctx.beginPath();
+    ctx.arc(Player.x, Player.y, 25, 0, Math.PI * 2);
+    ctx.fill();
+    // TEMPORARY: Display player coordinates.
+    ctx.fillStyle = "#ffffff";
+    ctx.font = "bold 20px Arial";
+    ctx.fillText(
+        `Player: ${Math.round(Player.x)}, ${Math.round(Player.y)}`,
+        Player.x + 30,
+        Player.y
+    );
 }
-ctx.save();
-ctx.translate(-this.cameraX, -this.cameraY);
-World.draw(ctx);
-Player.draw(ctx);
 ctx.restore();
 
 },
