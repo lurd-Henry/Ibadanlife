@@ -205,66 +205,51 @@ const Game = {
     },
 
     update(deltaTime) {
-        let dx = 0;
-        let dy = 0;
+let dx = 0;
+let dy = 0;
 
-        if (this.keys["arrowup"] || this.keys["w"]) dy -= 1;
-        if (this.keys["arrowdown"] || this.keys["s"]) dy += 1;
-        if (this.keys["arrowleft"] || this.keys["a"]) dx -= 1;
-        if (this.keys["arrowright"] || this.keys["d"]) dx += 1;
-
-        const joystickDirection = Joystick.getDirection();
-
-        dx += joystickDirection.x;
-        dy += joystickDirection.y;
-
-        const moving = Math.hypot(dx, dy) > 0.05;
-
-        Player.move(
-            dx,
-            dy,
-            deltaTime,
-            this.isRunning
-        );
-
-        this.cameraX = Player.x - this.canvas.clientWidth / 2;
-        this.cameraY = Player.y - this.canvas.clientHeight / 2;
-
-        this.cameraX = Math.max(
-            0,
-            Math.min(
-                this.cameraX,
-                World.width - this.canvas.clientWidth
-            )
-        );
-
-        this.cameraY = Math.max(
-            0,
-            Math.min(
-                this.cameraY,
-                World.height - this.canvas.clientHeight
-            )
-        );
-
-        this.updateHUD();
-
-        if (typeof UI !== "undefined" && UI.update) {
-            UI.update();
-        }
-
-        if (typeof AudioSystem !== "undefined") {
-            AudioSystem.setWalking(moving);
-        }
-        if (Interiors.active) {
+if (this.keys["arrowup"] || this.keys["w"]) dy -= 1;
+if (this.keys["arrowdown"] || this.keys["s"]) dy += 1;
+if (this.keys["arrowleft"] || this.keys["a"]) dx -= 1;
+if (this.keys["arrowright"] || this.keys["d"]) dx += 1;
+const joystickDirection = Joystick.getDirection();
+dx += joystickDirection.x;
+dy += joystickDirection.y;
+const moving = Math.hypot(dx, dy) > 0.05;
+// Always allow the player to move.
+Player.move(dx, dy, deltaTime, this.isRunning);
+if (Interiors.active) {
+    // Keep the interior camera fixed.
     this.cameraX = 0;
     this.cameraY = 0;
-
-    this.updateHUD();
-
-    return;
+} else {
+    // Follow the player in the outside world.
+    this.cameraX = Player.x - this.canvas.clientWidth / 2;
+    this.cameraY = Player.y - this.canvas.clientHeight / 2;
+    this.cameraX = Math.max(
+        0,
+        Math.min(
+            this.cameraX,
+            World.width - this.canvas.clientWidth
+        )
+    );
+    this.cameraY = Math.max(
+        0,
+        Math.min(
+            this.cameraY,
+            World.height - this.canvas.clientHeight
+        )
+    );
+}
+this.updateHUD();
+if (typeof UI !== "undefined" && UI.update) {
+    UI.update();
+}
+if (typeof AudioSystem !== "undefined") {
+    AudioSystem.setWalking(moving);
 }
 
-    },
+},
 
     render() {
     const ctx = this.ctx;
