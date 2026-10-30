@@ -1,34 +1,149 @@
 const Interiors = {
+
     active: false,
     current: null,
 
-    meals: [
-        { name: "Jollof Rice", price: 2500 },
-        { name: "Rice and Stew", price: 2000 },
-        { name: "Beans and Bread", price: 1500 },
-        { name: "Eba and Soup", price: 2000 },
-        { name: "Amala and Ewedu", price: 2500 }
-    ],
+    inventory: {},
+
+    locations: {
+
+        restaurant: {
+            title: "Mama Put",
+            counter: "FOOD COUNTER",
+
+            items: [
+                { name: "Jollof Rice", price: 2500 },
+                { name: "Rice and Stew", price: 2000 },
+                { name: "Beans and Bread", price: 1500 },
+                { name: "Eba and Soup", price: 2000 },
+                { name: "Amala and Ewedu", price: 2500 }
+            ]
+        },
+
+        grocery: {
+            title: "Provisions Store",
+            counter: "CHECKOUT",
+
+            items: [
+                { name: "Bottled Water", price: 300 },
+                { name: "Soft Drink", price: 500 },
+                { name: "Biscuits", price: 400 },
+                { name: "Bread", price: 1200 },
+                { name: "Milk", price: 1500 },
+                { name: "Instant Noodles", price: 700 }
+            ]
+        },
+
+        supermarket: {
+            title: "Lagos Mart",
+            counter: "PAYMENT COUNTER",
+
+            items: [
+                { name: "Soft Drink Pack", price: 2500 },
+                { name: "Cereal", price: 3500 },
+                { name: "Cooking Oil", price: 2800 },
+                { name: "Rice (Small Bag)", price: 9000 },
+                { name: "Snacks Bundle", price: 1800 },
+                { name: "Toiletries", price: 2200 }
+            ]
+        },
+
+        barber: {
+            title: "Fresh Cuts Barber Shop",
+            counter: "BARBER",
+
+            items: [
+                { name: "Regular Haircut", price: 1500 },
+                { name: "Premium Haircut", price: 3000 },
+                { name: "Haircut and Beard", price: 4000 },
+                { name: "Hair Treatment", price: 5000 }
+            ]
+        },
+
+        pharmacy: {
+            title: "City Pharmacy",
+            counter: "PHARMACIST",
+
+            items: [
+                { name: "First Aid Kit", price: 3500 },
+                { name: "Bandages", price: 800 },
+                { name: "Antiseptic", price: 1200 },
+                { name: "Vitamins", price: 2500 }
+            ]
+        },
+
+        eatery: {
+            title: "Lagos Eateries",
+            counter: "ORDER HERE",
+
+            items: [
+                { name: "Chicken and Chips", price: 4500 },
+                { name: "Shawarma", price: 3000 },
+                { name: "Burger", price: 3500 },
+                { name: "Pizza Slice", price: 2500 },
+                { name: "Fried Rice", price: 3000 }
+            ]
+        },
+
+        transport: {
+            title: "Lagos Motor Park",
+            counter: "TICKET COUNTER",
+
+            items: [
+                { name: "Local Bus Ticket", price: 1000 },
+                { name: "City Taxi Ticket", price: 2500 },
+                { name: "Intercity Ticket", price: 7000 }
+            ]
+        },
+
+        office: {
+            title: "Business Plaza",
+            counter: "RECEPTION",
+
+            items: [
+                { name: "Employment Enquiries", price: 0 }
+            ]
+        },
+
+        club: {
+            title: "Lagos Nightlife",
+            counter: "BAR",
+
+            items: [
+                { name: "Soft Drink", price: 1000 },
+                { name: "Mocktail", price: 2500 },
+                { name: "Club Entry", price: 3000 }
+            ]
+        }
+    },
 
     enter(building) {
+
+        if (!this.locations[building.interior]) {
+            Game.showMessage("This location is unavailable.");
+            return;
+        }
+
         this.active = true;
         this.current = building;
 
-        // Place player inside the restaurant.
-        Player.x = 480;
-        Player.y = 490;
+        Player.x = 400;
+        Player.y = 480;
 
-        this.closeShopMenu();
+        this.closeMenu();
 
         Game.cameraX = 0;
         Game.cameraY = 0;
 
+        Player.save();
+
         Game.showMessage(
-            `Welcome to ${building.name}!`
+            `Welcome to ${this.locations[building.interior].title}!`
         );
     },
 
     exit() {
+
         if (!this.active) return;
 
         const building = this.current;
@@ -36,9 +151,8 @@ const Interiors = {
         this.active = false;
         this.current = null;
 
-        this.closeShopMenu();
+        this.closeMenu();
 
-        // Place player outside the entrance.
         Player.x = building.entranceX;
         Player.y = building.entranceY + 35;
 
@@ -50,48 +164,75 @@ const Interiors = {
     },
 
     isBlocked(x, y, width, height) {
+
         const halfW = width / 2;
         const halfH = height / 2;
 
-        // Interior boundaries.
-        if (
+        return (
             x - halfW < 25 ||
             y - halfH < 25 ||
             x + halfW > 775 ||
             y + halfH > 575
-        ) {
-            return true;
-        }
-
-        // Restaurant furniture collision.
-        if (
-            this.current?.interior === "restaurant"
-        ) {
-            const furniture = [
-                { x: 140, y: 140, w: 140, h: 55 },
-                { x: 480, y: 140, w: 150, h: 55 },
-                { x: 350, y: 80, w: 130, h: 65 }
-            ];
-
-            return furniture.some(item => {
-                return (
-                    x + halfW > item.x &&
-                    x - halfW < item.x + item.w &&
-                    y + halfH > item.y &&
-                    y - halfH < item.y + item.h
-                );
-            });
-        }
-
-        return false;
+        );
     },
 
     draw(ctx) {
-        ctx.fillStyle = "#e8d7b7";
+
+        const type = this.current.interior;
+        const location = this.locations[type];
+
+        // Floor
+        ctx.fillStyle = type === "club"
+            ? "#242033"
+            : "#e7d6b8";
+
         ctx.fillRect(0, 0, 800, 600);
 
-        // Floor tiles.
-        ctx.strokeStyle = "#d2bd98";
+        this.drawFloor(ctx, type);
+
+        // Interior walls
+        ctx.fillStyle = type === "club"
+            ? "#413354"
+            : "#b98e67";
+
+        ctx.fillRect(0, 0, 800, 22);
+        ctx.fillRect(0, 0, 22, 600);
+        ctx.fillRect(778, 0, 22, 600);
+
+        // Location title
+        ctx.fillStyle = "#ffffff";
+        ctx.font = "bold 22px Arial";
+        ctx.textAlign = "center";
+
+        ctx.fillText(location.title, 400, 48);
+
+        // Main counter
+        this.drawCounter(ctx, type, location.counter);
+
+        // Furniture and displays
+        this.drawFurniture(ctx, type);
+
+        // NPC behind counter
+        this.drawPerson(ctx, 400, 105, "#d28c66");
+
+        // Player
+        Player.draw(ctx);
+
+        // Exit
+        ctx.fillStyle = "#267d48";
+        ctx.fillRect(350, 535, 100, 38);
+
+        ctx.fillStyle = "#fff";
+        ctx.font = "bold 14px Arial";
+        ctx.fillText("EXIT", 400, 559);
+    },
+
+    drawFloor(ctx, type) {
+
+        ctx.strokeStyle = type === "club"
+            ? "#514466"
+            : "#d1bd9a";
+
         ctx.lineWidth = 1;
 
         for (let x = 0; x < 800; x += 50) {
@@ -99,237 +240,288 @@ const Interiors = {
                 ctx.strokeRect(x, y, 50, 50);
             }
         }
-
-        if (
-            this.current?.interior === "restaurant"
-        ) {
-            this.drawRestaurant(ctx);
-        } else {
-            this.drawGenericInterior(ctx);
-        }
-
-        Player.draw(ctx);
-
-        this.drawExit(ctx);
     },
 
-    drawRestaurant(ctx) {
-        // Restaurant counter.
-        ctx.fillStyle = "#75452d";
-        ctx.fillRect(260, 40, 330, 65);
+    drawCounter(ctx, type, label) {
 
-        ctx.fillStyle = "#e6b76b";
-        ctx.fillRect(270, 45, 310, 10);
+        ctx.fillStyle = type === "club"
+            ? "#714e9b"
+            : "#81502e";
 
-        // Seller.
-        this.drawPerson(ctx, 420, 90, "#c65e39");
+        ctx.fillRect(250, 75, 300, 65);
 
-        // Food pots.
-        for (let i = 0; i < 4; i++) {
-            ctx.fillStyle = "#45413a";
-            ctx.beginPath();
-            ctx.ellipse(
-                300 + i * 75,
-                65,
-                23,
-                15,
-                0,
-                0,
-                Math.PI * 2
-            );
-            ctx.fill();
+        ctx.fillStyle = "#e5b86c";
+        ctx.fillRect(250, 75, 300, 9);
 
-            ctx.fillStyle = "#df9d37";
-            ctx.beginPath();
-            ctx.arc(
-                300 + i * 75,
-                65,
-                13,
-                0,
-                Math.PI * 2
-            );
-            ctx.fill();
-        }
-
-        // Tables.
-        this.drawTable(ctx, 140, 180);
-        this.drawTable(ctx, 480, 180);
-        this.drawTable(ctx, 140, 380);
-        this.drawTable(ctx, 480, 380);
-
-        // Restaurant sign.
-        ctx.fillStyle = "#35241a";
-        ctx.font = "bold 23px Arial";
+        ctx.fillStyle = "#fff";
+        ctx.font = "bold 12px Arial";
         ctx.textAlign = "center";
-        ctx.fillText("MAMA PUT", 400, 25);
 
-        ctx.font = "13px Arial";
-        ctx.fillText("Fresh Nigerian Meals", 400, 125);
+        ctx.fillText(label, 400, 160);
+    },
+
+    drawFurniture(ctx, type) {
+
+        if (type === "restaurant" || type === "eatery") {
+
+            [140, 480].forEach(x => {
+                this.drawTable(ctx, x, 240);
+                this.drawTable(ctx, x, 400);
+            });
+
+        } else if (
+            type === "grocery" ||
+            type === "supermarket" ||
+            type === "pharmacy"
+        ) {
+
+            [80, 620].forEach(x => {
+
+                ctx.fillStyle = "#90633f";
+
+                ctx.fillRect(x, 190, 100, 280);
+
+                for (let y = 210; y < 450; y += 65) {
+
+                    ctx.fillStyle = "#d7a75c";
+                    ctx.fillRect(x + 8, y, 84, 12);
+
+                    ctx.fillStyle = "#5a9a75";
+                    ctx.fillRect(x + 15, y - 17, 14, 17);
+
+                    ctx.fillStyle = "#d65d4d";
+                    ctx.fillRect(x + 40, y - 20, 18, 20);
+
+                    ctx.fillStyle = "#e5c85c";
+                    ctx.fillRect(x + 67, y - 15, 15, 15);
+                }
+            });
+
+        } else if (type === "barber") {
+
+            [230, 500].forEach(x => {
+
+                ctx.fillStyle = "#555";
+
+                ctx.fillRect(x, 250, 90, 100);
+
+                ctx.fillStyle = "#b7d5d8";
+                ctx.fillRect(x + 5, 180, 80, 60);
+
+                ctx.fillStyle = "#8c5b3e";
+                ctx.fillRect(x + 20, 260, 50, 60);
+            });
+
+        } else if (type === "club") {
+
+            // Dance floor
+            ctx.fillStyle = "#44345e";
+            ctx.fillRect(200, 200, 400, 260);
+
+            // DJ booth
+            ctx.fillStyle = "#9c59c9";
+            ctx.fillRect(310, 180, 180, 50);
+
+            ctx.fillStyle = "#fff";
+            ctx.font = "bold 15px Arial";
+            ctx.fillText("DJ BOOTH", 400, 210);
+
+            // Tables
+            this.drawTable(ctx, 100, 300);
+            this.drawTable(ctx, 610, 300);
+
+        } else if (type === "office") {
+
+            ctx.fillStyle = "#79553c";
+            ctx.fillRect(180, 250, 440, 100);
+
+            ctx.fillStyle = "#e6c99a";
+            ctx.fillRect(200, 265, 400, 12);
+
+        } else if (type === "transport") {
+
+            ctx.fillStyle = "#79553c";
+            ctx.fillRect(100, 240, 600, 80);
+
+            ctx.fillStyle = "#f4d17b";
+            ctx.fillRect(100, 240, 600, 12);
+
+            ctx.fillStyle = "#fff";
+            ctx.fillText("TICKET OFFICE", 400, 285);
+        }
     },
 
     drawTable(ctx, x, y) {
-        // Table.
-        ctx.fillStyle = "#81502e";
-        ctx.fillRect(x, y, 120, 60);
 
-        // Chairs.
-        ctx.fillStyle = "#b64f36";
-        ctx.fillRect(x - 18, y + 12, 13, 35);
-        ctx.fillRect(x + 125, y + 12, 13, 35);
+        ctx.fillStyle = "#80502f";
+        ctx.fillRect(x, y, 120, 55);
 
-        ctx.fillRect(x + 35, y - 18, 35, 12);
-        ctx.fillRect(x + 35, y + 65, 35, 12);
+        ctx.fillStyle = "#ad543c";
+
+        ctx.fillRect(x - 15, y + 10, 12, 35);
+        ctx.fillRect(x + 123, y + 10, 12, 35);
     },
 
     drawPerson(ctx, x, y, shirt) {
-        ctx.fillStyle = "#333";
-        ctx.beginPath();
-        ctx.arc(x, y - 12, 9, 0, Math.PI * 2);
-        ctx.fill();
 
         ctx.fillStyle = "#bd825e";
+
         ctx.beginPath();
-        ctx.arc(x, y - 10, 7, 0, Math.PI * 2);
+        ctx.arc(x, y - 10, 8, 0, Math.PI * 2);
         ctx.fill();
 
         ctx.fillStyle = shirt;
-        ctx.fillRect(x - 10, y, 20, 23);
+        ctx.fillRect(x - 12, y, 24, 24);
     },
 
-    drawGenericInterior(ctx) {
-        ctx.fillStyle = "#76543c";
-        ctx.fillRect(120, 100, 560, 70);
+    interact() {
 
-        ctx.fillStyle = "#fff";
-        ctx.font = "bold 24px Arial";
-        ctx.textAlign = "center";
-
-        ctx.fillText(
-            this.current?.name || "SHOP",
-            400,
-            65
-        );
-
-        ctx.fillStyle = "#ad8058";
-        ctx.fillRect(250, 240, 300, 65);
-    },
-
-    drawExit(ctx) {
-        ctx.fillStyle = "#397a4c";
-        ctx.fillRect(350, 530, 100, 40);
-
-        ctx.fillStyle = "#fff";
-        ctx.font = "bold 13px Arial";
-        ctx.textAlign = "center";
-
-        ctx.fillText("EXIT", 400, 555);
-    },
-
-    openShopMenu() {
         if (!this.active) return;
 
-        if (this.current?.interior !== "restaurant") {
-            Game.showMessage(
-                "This shop's services are coming soon."
-            );
+        // Exit area
+        if (
+            Player.y > 510 &&
+            Player.x > 320 &&
+            Player.x < 480
+        ) {
+            this.exit();
             return;
         }
 
-        let menu = document.getElementById("restaurant-menu");
+        // Service counter
+        if (
+            Player.y < 195 &&
+            Player.x > 280 &&
+            Player.x < 520
+        ) {
+            this.openMenu();
+            return;
+        }
+
+        Game.showMessage(
+            "Approach the counter or exit to continue."
+        );
+    },
+
+    openMenu() {
+
+        const location = this.locations[
+            this.current.interior
+        ];
+
+        let menu = document.getElementById("shop-menu");
 
         if (!menu) {
+
             menu = document.createElement("div");
-            menu.id = "restaurant-menu";
+
+            menu.id = "shop-menu";
 
             menu.innerHTML = `
-                <div class="restaurant-panel">
-                    <button id="close-food-menu">✕</button>
-                    <h2>🍲 Mama Put</h2>
-                    <p>Choose your meal</p>
-                    <div id="food-items"></div>
+                <div class="shop-panel">
+
+                    <button id="shop-close">✕</button>
+
+                    <h2 id="shop-title"></h2>
+
+                    <p>Available services and products</p>
+
+                    <div id="shop-items"></div>
+
                 </div>
             `;
 
             document.body.appendChild(menu);
 
-            document.getElementById("close-food-menu")
-                .onclick = () => this.closeShopMenu();
+            document.getElementById("shop-close")
+                .onclick = () => this.closeMenu();
         }
 
-        const items = document.getElementById("food-items");
+        document.getElementById("shop-title")
+            .textContent = location.title;
 
-        items.innerHTML = this.meals.map((meal, index) => `
-            <button class="food-item" data-index="${index}">
-                <span>${meal.name}</span>
-                <strong>₦${meal.price.toLocaleString("en-NG")}</strong>
+        const items = document.getElementById("shop-items");
+
+        items.innerHTML = location.items.map((item, index) => `
+            <button class="shop-item" data-index="${index}">
+
+                <span>${item.name}</span>
+
+                <strong>
+                    ${item.price === 0
+                        ? "FREE"
+                        : "₦" + item.price.toLocaleString("en-NG")}
+                </strong>
+
             </button>
         `).join("");
 
-        items.querySelectorAll(".food-item")
+        items.querySelectorAll(".shop-item")
             .forEach(button => {
+
                 button.onclick = () => {
-                    this.buyMeal(
+
+                    this.purchase(
                         Number(button.dataset.index)
                     );
+
                 };
             });
 
         menu.classList.add("visible");
     },
 
-    buyMeal(index) {
-        const meal = this.meals[index];
+    purchase(index) {
 
-        if (!meal) return;
+        const location = this.locations[
+            this.current.interior
+        ];
 
-        if (Player.cash < meal.price) {
-            Game.showMessage("Not enough money!");
+        const item = location.items[index];
+
+        if (!item) return;
+
+        if (Player.cash < item.price) {
+
+            Game.showMessage("Insufficient funds!");
+
             return;
         }
 
-        Player.cash -= meal.price;
+        if (
+            this.current.interior === "office" &&
+            item.price === 0
+        ) {
+
+            Game.showMessage(
+                "Employment services are coming soon!"
+            );
+
+            return;
+        }
+
+        Player.cash -= item.price;
+
+        this.inventory[item.name] =
+            (this.inventory[item.name] || 0) + 1;
+
         Player.save();
 
         Game.updateHUD();
 
         Game.showMessage(
-            `You purchased ${meal.name}! Enjoy your meal.`
+            `You purchased ${item.name}!`
         );
 
-        this.closeShopMenu();
+        this.closeMenu();
     },
 
-    closeShopMenu() {
-        const menu = document.getElementById(
-            "restaurant-menu"
-        );
+    closeMenu() {
 
-        if (menu) menu.classList.remove("visible");
-    },
+        const menu = document.getElementById("shop-menu");
 
-    interact() {
-        if (!this.active) return;
-
-        const nearExit =
-            Player.y > 500 &&
-            Player.x > 320 &&
-            Player.x < 480;
-
-        if (nearExit) {
-            this.exit();
-            return;
+        if (menu) {
+            menu.classList.remove("visible");
         }
-
-        if (
-            this.current?.interior === "restaurant" &&
-            Player.y < 150
-        ) {
-            this.openShopMenu();
-            return;
-        }
-
-        Game.showMessage(
-            "Move closer to the counter or exit."
-        );
     }
 };
