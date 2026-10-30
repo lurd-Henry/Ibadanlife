@@ -200,7 +200,26 @@ const World = {
                 building.y + building.height - 45
             );
         });
+getNearbyBuilding() {
+    return this.buildings.find(building => {
+        if (!building.enterable) return false;
 
+        const distance = Math.hypot(
+            Player.x - building.entranceX,
+            Player.y - building.entranceY
+        );
+
+        return distance < 65;
+    }) || null;
+},
+
+getEntrancePrompt() {
+    const building = this.getNearbyBuilding();
+
+    return building
+        ? `Press E to enter ${building.name}`
+        : null;
+}
         // Job markers
         this.jobs.forEach(job => {
             if (job.completed) return;
