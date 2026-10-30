@@ -1,6 +1,6 @@
 const Player = {
-    x: 480,
-    y: 800,
+    x: 100,
+    y: 100,
 
     width: 26,
     height: 34,
