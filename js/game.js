@@ -10,46 +10,80 @@ const Game = {
     cameraY: 0,
 
     elapsed: 0,
-
     keys: {},
-
     isRunning: false,
+    messageTimer: null,
+
+    // =====================================
+    // INITIALIZATION
+    // =====================================
 
     init() {
         this.canvas = document.getElementById("game-canvas");
+
+        if (!this.canvas) {
+            console.error("Game canvas not found.");
+            return;
+        }
+
         this.ctx = this.canvas.getContext("2d");
 
-        Joystick.init();
+        if (!this.ctx) {
+            console.error("Canvas rendering is unavailable.");
+            return;
+        }
+
+        if (typeof Joystick !== "undefined") {
+            Joystick.init();
+        }
+
         this.bindControls();
         this.resizeCanvas();
 
-        window.addEventListener(
-            "resize",
-            () => this.resizeCanvas()
-        );
+        window.addEventListener("resize", () => {
+            this.resizeCanvas();
+            this.render();
+        });
 
-        Player.init();
+        if (typeof Player !== "undefined") {
+            Player.init();
+        }
 
         this.running = false;
         this.paused = false;
 
+        this.updateCamera();
         this.renderInitialWorld();
+
+        console.log("Lagos Life initialized successfully.");
     },
 
+    // =====================================
+    // CANVAS RESIZING
+    // =====================================
+
     resizeCanvas() {
-        if (!this.canvas) return;
+        if (!this.canvas || !this.ctx) return;
 
         const rect = this.canvas.getBoundingClientRect();
 
-        if (!rect.width || !rect.height) return;
+        if (rect.width <= 0 || rect.height <= 0) return;
 
         const dpr = Math.min(
             window.devicePixelRatio || 1,
             2
         );
 
-        this.canvas.width = Math.round(rect.width * dpr);
-        this.canvas.height = Math.round(rect.height * dpr);
+        const pixelWidth = Math.round(rect.width * dpr);
+        const pixelHeight = Math.round(rect.height * dpr);
+
+        if (
+            this.canvas.width !== pixelWidth ||
+            this.canvas.height !== pixelHeight
+        ) {
+            this.canvas.width = pixelWidth;
+            this.canvas.height = pixelHeight;
+        }
 
         this.ctx.setTransform(
             dpr,
@@ -61,19 +95,59 @@ const Game = {
         );
     },
 
+    // =====================================
+    // CAMERA
+    // =====================================
+
+    updateCamera() {
+        if (!this.canvas || !Player || !World) return;
+
+        if (typeof Interiors !== "undefined" && Interiors.active) {
+            this.cameraX = 0;
+            this.cameraY = 0;
+            return;
+        }
+
+        const width = this.canvas.clientWidth;
+        const height = this.canvas.clientHeight;
+
+        this.cameraX = Player.x - width / 2;
+        this.cameraY = Player.y - height / 2;
+
+        this.cameraX = Math.max(
+            0,
+            Math.min(
+                this.cameraX,
+                Math.max(0, World.width - width)
+            )
+        );
+
+        this.cameraY = Math.max(
+            0,
+            Math.min(
+                this.cameraY,
+                Math.max(0, World.height - height)
+            )
+        );
+    },
+
+    // =====================================
+    // CONTROLS
+    // =====================================
+
     bindControls() {
         window.addEventListener("keydown", (event) => {
             const key = event.key.toLowerCase();
 
-            if (
-                [
-                    "arrowup",
-                    "arrowdown",
-                    "arrowleft",
-                    "arrowright",
-                    " "
-                ].includes(key)
-            ) {
+            const movementKeys = [
+                "arrowup",
+                "arrowdown",
+                "arrowleft",
+                "arrowright",
+                " "
+            ];
+
+            if (movementKeys.includes(key)) {
                 event.preventDefault();
             }
 
@@ -95,213 +169,269 @@ const Game = {
         window.addEventListener("blur", () => {
             this.keys = {};
             this.isRunning = false;
+
+            if (typeof Joystick !== "undefined") {
+                Joystick.reset();
+            }
         });
 
-        document.getElementById("start-game")
-            .addEventListener("click", () => {
+        const startButton = document.getElementById("start-game");
+
+        if (startButton) {
+            startButton.addEventListener("click", () => {
                 this.startNewGame();
             });
+        }
 
-        document.querySelectorAll(".gender-option")
-            .forEach((button) => {
-                button.addEventListener("click", () => {
-                    document.querySelectorAll(".gender-option")
-                        .forEach((item) => {
-                            item.classList.remove("selected");
-                            item.setAttribute("aria-pressed", "false");
-                        });
-
-                    button.classList.add("selected");
-                    button.setAttribute("aria-pressed", "true");
+        document.querySelectorAll(".gender-option").forEach((button) => {
+            button.addEventListener("click", () => {
+                document.querySelectorAll(".gender-option").forEach((item) => {
+                    item.classList.remove("selected");
+                    item.setAttribute("aria-pressed", "false");
                 });
-            });
 
-        document.getElementById("fullscreen-button")
-            .addEventListener("click", () => {
+                button.classList.add("selected");
+                button.setAttribute("aria-pressed", "true");
+            });
+        });
+
+        const fullscreenButton = document.getElementById("fullscreen-button");
+
+        if (fullscreenButton) {
+            fullscreenButton.addEventListener("click", () => {
                 this.toggleFullscreen();
             });
+        }
 
-        document.getElementById("pause-button")
-            .addEventListener("click", () => {
+        const pauseButton = document.getElementById("pause-button");
+
+        if (pauseButton) {
+            pauseButton.addEventListener("click", () => {
                 this.togglePause();
             });
+        }
 
-        document.getElementById("resume-game")
-            .addEventListener("click", () => {
+        const resumeButton = document.getElementById("resume-game");
+
+        if (resumeButton) {
+            resumeButton.addEventListener("click", () => {
                 this.togglePause(false);
             });
+        }
 
         const runButton = document.getElementById("run-button");
 
-        runButton.addEventListener("pointerdown", (event) => {
-            event.preventDefault();
-            this.isRunning = true;
-        });
+        if (runButton) {
+            const startRunning = (event) => {
+                event.preventDefault();
+                this.isRunning = true;
+            };
 
-        const stopRunning = () => {
-            this.isRunning = false;
-        };
+            const stopRunning = () => {
+                this.isRunning = false;
+            };
 
-        runButton.addEventListener("pointerup", stopRunning);
-        runButton.addEventListener("pointercancel", stopRunning);
-        runButton.addEventListener("lostpointercapture", stopRunning);
+            runButton.addEventListener("pointerdown", startRunning);
+            runButton.addEventListener("pointerup", stopRunning);
+            runButton.addEventListener("pointercancel", stopRunning);
+            runButton.addEventListener("lostpointercapture", stopRunning);
 
-        window.addEventListener("pointerup", stopRunning);
-        window.addEventListener("blur", stopRunning);
+            window.addEventListener("pointerup", stopRunning);
+        }
 
-        document.getElementById("interact-button")
-            .addEventListener("click", () => {
+        const interactButton = document.getElementById("interact-button");
+
+        if (interactButton) {
+            interactButton.addEventListener("click", () => {
                 this.interact();
             });
+        }
     },
+
+    // =====================================
+    // START GAME
+    // =====================================
 
     startNewGame() {
         const nameInput = document.getElementById("character-name");
 
-        const selected = document.querySelector(
+        const selectedGender = document.querySelector(
             ".gender-option.selected"
         );
 
-        const name = nameInput.value.trim() || "Player";
-        const gender = selected?.dataset.gender || "male";
+        const name = nameInput?.value.trim() || "Player";
+        const gender = selectedGender?.dataset.gender || "male";
 
         Player.createCharacter(name, gender);
 
-        document.getElementById("character-screen")
-            .classList.add("hidden");
+        const characterScreen = document.getElementById("character-screen");
+        const gameScreen = document.getElementById("game-screen");
 
-        document.getElementById("game-screen")
-            .classList.remove("hidden");
+        if (characterScreen) {
+            characterScreen.classList.add("hidden");
+        }
 
-        this.resizeCanvas();
-        this.updateHUD();
+        if (gameScreen) {
+            gameScreen.classList.remove("hidden");
+        }
 
-        this.running = true;
-        this.paused = false;
-        this.lastTime = 0;
-        this.elapsed = 0;
+        // Allow the browser to calculate the newly visible canvas size.
+        requestAnimationFrame(() => {
+            this.resizeCanvas();
 
-        this.renderInitialWorld();
+            this.running = true;
+            this.paused = false;
 
-        requestAnimationFrame((time) => this.loop(time));
+            this.lastTime = 0;
+            this.elapsed = 0;
+
+            this.cameraX = 0;
+            this.cameraY = 0;
+
+            this.updateCamera();
+            this.updateHUD();
+            this.renderInitialWorld();
+
+            requestAnimationFrame((time) => {
+                this.loop(time);
+            });
+        });
     },
 
+    // =====================================
+    // GAME LOOP
+    // =====================================
+
     loop(timestamp) {
-if (!this.running) return;
-if (this.paused) return;
+        if (!this.running || this.paused) return;
 
-const deltaTime = this.lastTime
-    ? Math.min((timestamp - this.lastTime) / 1000, 0.05)
-    : 0;
-this.lastTime = timestamp;
-this.elapsed += deltaTime;
-this.update(deltaTime);
-this.render();
-// Temporary diagnostic overlay
-const ctx = this.ctx;
-ctx.save();
-ctx.setTransform(1, 0, 0, 1, 0, 0);
-ctx.fillStyle = "white";
-ctx.font = "16px Arial";
-ctx.fillText("GAME LOOP: RUNNING", 15, 25);
-ctx.fillText(
-    "PLAYER: " + Math.round(Player.x) + ", " + Math.round(Player.y),
-    15,
-    50
-);
-ctx.fillText(
-    "INTERIOR: " + (Interiors.active ? "YES" : "NO"),
-    15,
-    75
-);
-ctx.restore();
-requestAnimationFrame((time) => this.loop(time));
+        const deltaTime = this.lastTime
+            ? Math.min((timestamp - this.lastTime) / 1000, 0.05)
+            : 0;
 
-},
+        this.lastTime = timestamp;
+        this.elapsed += deltaTime;
+
+        this.update(deltaTime);
+        this.render();
+
+        requestAnimationFrame((time) => {
+            this.loop(time);
+        });
+    },
+
+    // =====================================
+    // PLAYER AND WORLD UPDATES
+    // =====================================
 
     update(deltaTime) {
-let dx = 0;
-let dy = 0;
+        let dx = 0;
+        let dy = 0;
 
-if (this.keys["arrowup"] || this.keys["w"]) dy -= 1;
-if (this.keys["arrowdown"] || this.keys["s"]) dy += 1;
-if (this.keys["arrowleft"] || this.keys["a"]) dx -= 1;
-if (this.keys["arrowright"] || this.keys["d"]) dx += 1;
-const joystickDirection = Joystick.getDirection();
-dx += joystickDirection.x;
-dy += joystickDirection.y;
-const moving = Math.hypot(dx, dy) > 0.05;
-// Always allow the player to move.
-Player.move(dx, dy, deltaTime, this.isRunning);
-if (Interiors.active) {
-    // Keep the interior camera fixed.
-    this.cameraX = 0;
-    this.cameraY = 0;
-} else {
-    // Follow the player in the outside world.
-    this.cameraX = Player.x - this.canvas.clientWidth / 2;
-    this.cameraY = Player.y - this.canvas.clientHeight / 2;
-    this.cameraX = Math.max(
-        0,
-        Math.min(
-            this.cameraX,
-            World.width - this.canvas.clientWidth
-        )
-    );
-    this.cameraY = Math.max(
-        0,
-        Math.min(
-            this.cameraY,
-            World.height - this.canvas.clientHeight
-        )
-    );
-}
-this.updateHUD();
-if (typeof UI !== "undefined" && UI.update) {
-    UI.update();
-}
-if (typeof AudioSystem !== "undefined") {
-    AudioSystem.setWalking(moving);
-}
+        if (this.keys["arrowup"] || this.keys["w"]) dy -= 1;
+        if (this.keys["arrowdown"] || this.keys["s"]) dy += 1;
+        if (this.keys["arrowleft"] || this.keys["a"]) dx -= 1;
+        if (this.keys["arrowright"] || this.keys["d"]) dx += 1;
 
-},
+        if (typeof Joystick !== "undefined") {
+            const direction = Joystick.getDirection();
+
+            dx += direction.x;
+            dy += direction.y;
+        }
+
+        const moving = Math.hypot(dx, dy) > 0.05;
+
+        Player.move(
+            dx,
+            dy,
+            deltaTime,
+            this.isRunning
+        );
+
+        this.updateCamera();
+        this.updateHUD();
+
+        if (typeof UI !== "undefined" && UI.update) {
+            UI.update();
+        }
+
+        if (typeof AudioSystem !== "undefined") {
+            AudioSystem.setWalking(moving);
+        }
+    },
+
+    // =====================================
+    // WORLD RENDERING
+    // =====================================
 
     render() {
-    const ctx = this.ctx;
-    const canvas = this.canvas;
+        if (!this.ctx || !this.canvas) return;
 
-    if (!ctx || !canvas) return;
+        const ctx = this.ctx;
 
-    const width = canvas.clientWidth;
-    const height = canvas.clientHeight;
+        const width = this.canvas.clientWidth;
+        const height = this.canvas.clientHeight;
 
-    ctx.clearRect(0, 0, width, height);
+        if (width <= 0 || height <= 0) return;
 
-    // Test background
-    ctx.fillStyle = "#00aa00";
-    ctx.fillRect(0, 0, width, height);
+        // Clear previous frame.
+        ctx.clearRect(0, 0, width, height);
 
-    // Red test box
-    ctx.fillStyle = "red";
-    ctx.fillRect(30, 30, 100, 100);
+        // Interior rendering.
+        if (typeof Interiors !== "undefined" && Interiors.active) {
+            ctx.save();
 
-    // Blue test circle
-    ctx.fillStyle = "blue";
-    ctx.beginPath();
-    ctx.arc(200, 100, 40, 0, Math.PI * 2);
-    ctx.fill();
+            ctx.scale(
+                width / 800,
+                height / 600
+            );
 
-    // Test text
-    ctx.fillStyle = "white";
-    ctx.font = "bold 20px Arial";
-    ctx.fillText("CANVAS TEST WORKING", 30, 200);
-},
+            Interiors.draw(ctx);
+
+            ctx.restore();
+
+            return;
+        }
+
+        // Outside world rendering.
+        ctx.save();
+
+        ctx.translate(
+            -this.cameraX,
+            -this.cameraY
+        );
+
+        World.draw(ctx);
+        Player.draw(ctx);
+
+        ctx.restore();
+    },
+
+    // =====================================
+    // INITIAL WORLD RENDERING
+    // =====================================
+
+    renderInitialWorld() {
+        if (!this.ctx || !this.canvas) return;
+
+        this.resizeCanvas();
+        this.updateCamera();
+        this.render();
+    },
+
+    // =====================================
+    // HUD
+    // =====================================
+
     updateHUD() {
         const nameElement = document.getElementById("hud-player-name");
         const cashElement = document.getElementById("hud-cash");
         const avatarElement = document.getElementById("player-avatar");
 
-        if (nameElement) nameElement.textContent = Player.name;
+        if (nameElement) {
+            nameElement.textContent = Player.name;
+        }
 
         if (cashElement) {
             cashElement.textContent =
@@ -314,34 +444,59 @@ if (typeof AudioSystem !== "undefined") {
         }
     },
 
+    // =====================================
+    // INTERACTIONS
+    // =====================================
+
     interact() {
-    if (!this.running || this.paused) return;
+        if (!this.running || this.paused) return;
 
-    if (Interiors.active) {
-        Interiors.interact();
-        return;
-    }
+        if (typeof Interiors !== "undefined" && Interiors.active) {
+            Interiors.interact();
+            return;
+        }
 
-    const building = World.getNearbyBuilding();
+        let building = null;
 
-    if (building) {
-        Interiors.enter(building);
-        return;
-    }
+        if (typeof World.getNearbyBuilding === "function") {
+            building = World.getNearbyBuilding();
+        } else {
+            building = World.buildings.find((item) => {
+                if (!item.enterable) return false;
 
-    if (
-        typeof Missions !== "undefined" &&
-        Missions.interact
-    ) {
-        Missions.interact();
-        return;
-    }
+                return Math.hypot(
+                    Player.x - item.entranceX,
+                    Player.y - item.entranceY
+                ) < 65;
+            }) || null;
+        }
 
-    this.showMessage("Nothing to interact with here.");
-},
+        if (building) {
+            Interiors.enter(building);
+            this.updateCamera();
+            this.render();
+            return;
+        }
+
+        if (
+            typeof Missions !== "undefined" &&
+            typeof Missions.interact === "function"
+        ) {
+            Missions.interact();
+            return;
+        }
+
+        this.showMessage("Nothing to interact with here.");
+    },
+
+    // =====================================
+    // GAME MESSAGES
+    // =====================================
 
     showMessage(message) {
         const element = document.getElementById("game-message");
+
+        if (!element) return;
 
         element.textContent = message;
         element.classList.remove("hidden");
@@ -353,6 +508,10 @@ if (typeof AudioSystem !== "undefined") {
         }, 2200);
     },
 
+    // =====================================
+    // PAUSE AND RESUME
+    // =====================================
+
     togglePause(forceState) {
         if (!this.running) return;
 
@@ -360,22 +519,37 @@ if (typeof AudioSystem !== "undefined") {
             ? forceState
             : !this.paused;
 
-        document.getElementById("pause-overlay")
-            .classList.toggle("hidden", !this.paused);
+        const overlay = document.getElementById("pause-overlay");
+
+        if (overlay) {
+            overlay.classList.toggle("hidden", !this.paused);
+        }
 
         if (this.paused) {
             if (typeof AudioSystem !== "undefined") {
                 AudioSystem.setWalking(false);
             }
 
-            Joystick.reset();
+            if (typeof Joystick !== "undefined") {
+                Joystick.reset();
+            }
+
+            this.keys = {};
             this.isRunning = false;
             this.lastTime = 0;
+
         } else {
             this.lastTime = 0;
-            requestAnimationFrame((time) => this.loop(time));
+
+            requestAnimationFrame((time) => {
+                this.loop(time);
+            });
         }
     },
+
+    // =====================================
+    // FULLSCREEN
+    // =====================================
 
     async toggleFullscreen() {
         try {
@@ -384,6 +558,13 @@ if (typeof AudioSystem !== "undefined") {
             } else {
                 await document.exitFullscreen?.();
             }
+
+            setTimeout(() => {
+                this.resizeCanvas();
+                this.updateCamera();
+                this.render();
+            }, 200);
+
         } catch (error) {
             console.warn("Fullscreen unavailable:", error);
 
