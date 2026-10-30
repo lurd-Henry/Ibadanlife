@@ -47,8 +47,8 @@ const Player = {
             this.width,
             this.height
         )) {
-            this.x = 480;
-            this.y = 800;
+            this.x = 100;
+            this.y = 100;
         }
 
         this.updateAppearance();
