@@ -268,41 +268,33 @@ if (typeof AudioSystem !== "undefined") {
 
     render() {
     const ctx = this.ctx;
-    const width = this.canvas.clientWidth;
-    const height = this.canvas.clientHeight;
+    const canvas = this.canvas;
 
-    if (!ctx || !width || !height) return;
+    if (!ctx || !canvas) return;
+
+    const width = canvas.clientWidth;
+    const height = canvas.clientHeight;
 
     ctx.clearRect(0, 0, width, height);
 
-    // Interior rendering
-    if (Interiors.active) {
-        ctx.save();
-        ctx.scale(width / 800, height / 600);
-        Interiors.draw(ctx);
-        ctx.restore();
-        return;
-    }
+    // Test background
+    ctx.fillStyle = "#00aa00";
+    ctx.fillRect(0, 0, width, height);
 
-    // Calculate camera position around player
-    const cameraX = Math.max(
-        0,
-        Math.min(Player.x - width / 2, World.width - width)
-    );
+    // Red test box
+    ctx.fillStyle = "red";
+    ctx.fillRect(30, 30, 100, 100);
 
-    const cameraY = Math.max(
-        0,
-        Math.min(Player.y - height / 2, World.height - height)
-    );
+    // Blue test circle
+    ctx.fillStyle = "blue";
+    ctx.beginPath();
+    ctx.arc(200, 100, 40, 0, Math.PI * 2);
+    ctx.fill();
 
-    // Draw outside world
-    ctx.save();
-    ctx.translate(-cameraX, -cameraY);
-
-    World.draw(ctx);
-    Player.draw(ctx);
-
-    ctx.restore();
+    // Test text
+    ctx.fillStyle = "white";
+    ctx.font = "bold 20px Arial";
+    ctx.fillText("CANVAS TEST WORKING", 30, 200);
 },
     updateHUD() {
         const nameElement = document.getElementById("hud-player-name");
