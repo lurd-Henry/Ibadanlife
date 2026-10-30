@@ -1,111 +1,231 @@
 const World = {
-width: 2400,
-height: 1800,
-tileSize: 80,
+    width: 2400,
+    height: 1800,
 
-buildings: [],
-roads: [],
-init() {
-    this.buildings = [
-        {name: "Mama Put", x: 100, y: 100, w: 240, h: 180 },
-        {name: "Club", x: 460, y: 100, w: 200, h: 180 },
-        {name: "Barber Shop", x: 820, y: 100, w: 300, h: 180 },
-        {name: "Tattoo Shop", x: 100, y: 420, w: 240, h: 220 },
-        {name: "Provision Store", x: 460, y: 420, w: 200, h: 220 },
-        { x: 820, y: 420, w: 300, h: 220 },
-        { x: 1400, y: 100, w: 260, h: 180 },
-        { x: 1780, y: 100, w: 260, h: 180 },
-        { x: 1400, y: 420, w: 260, h: 220 },
-        { x: 1780, y: 420, w: 260, h: 220 },
-        { x: 100, y: 1000, w: 280, h: 200 },
-        { x: 500, y: 1000, w: 280, h: 200 },
-        { x: 900, y: 1000, w: 280, h: 200 },
-        { x: 1400, y: 1000, w: 260, h: 200 },
-        { x: 1780, y: 1000, w: 260, h: 200 }
-    ];
-    this.roads = [
-        { x: 0, y: 300, w: 2400, h: 90 },
-        { x: 0, y: 700, w: 2400, h: 100 },
-        { x: 0, y: 900, w: 2400, h: 80 },
-        { x: 350, y: 0, w: 90, h: 1800 },
-        { x: 700, y: 0, w: 90, h: 1800 },
-        { x: 1200, y: 0, w: 100, h: 1800 },
-        { x: 1700, y: 0, w: 90, h: 1800 }
-    ];
-},
-draw(ctx) {
-    // Ground
-    ctx.fillStyle = "#657d49";
-    ctx.fillRect(0, 0, this.width, this.height);
-    // Grass texture
-    ctx.fillStyle = "#708953";
-    for (let x = 0; x < this.width; x += 80) {
-        for (let y = 0; y < this.height; y += 80) {
-            ctx.fillRect(x + 10, y + 10, 2, 2);
+    buildings: [
+        {
+            x: 100, y: 100, width: 220, height: 150,
+            name: "MAMA PUT",
+            color: "#d9b68a",
+            enterable: true,
+            interior: "restaurant",
+            entranceX: 210,
+            entranceY: 275,
+        },
+        {
+            x: 390, y: 100, width: 190, height: 150,
+            name: "PROVISIONS",
+            color: "#e5ce8c"
+        },
+        {
+            x: 100, y: 350, width: 210, height: 160,
+            name: "BARBER SHOP",
+            color: "#d3a58a"
+        },
+        {
+            x: 390, y: 350, width: 200, height: 160,
+            name: "LAGOS MART",
+            color: "#d9c28e"
+        },
+        {
+            x: 900, y: 100, width: 280, height: 180,
+            name: "BUSINESS PLAZA",
+            color: "#b8c6b4"
+        },
+        {
+            x: 900, y: 360, width: 300, height: 170,
+            name: "MOTOR PARK",
+            color: "#c6b39a"
+        },
+        {
+            x: 1450, y: 100, width: 250, height: 170,
+            name: "EATERIES",
+            color: "#d9ad7f"
+        },
+        {
+            x: 1450, y: 370, width: 250, height: 170,
+            name: "PHARMACY",
+            color: "#b9d3ae"
         }
-    }
-    // Roads
-    for (const road of this.roads) {
-        ctx.fillStyle = "#34383d";
-        ctx.fillRect(road.x, road.y, road.w, road.h);
-        // Road markings
-        ctx.strokeStyle = "#e8dca6";
-        ctx.lineWidth = 3;
-        ctx.setLineDash([24, 20]);
-        ctx.beginPath();
-        if (road.w > road.h) {
-            const centerY = road.y + road.h / 2;
-            ctx.moveTo(road.x, centerY);
-            ctx.lineTo(road.x + road.w, centerY);
-        } else {
-            const centerX = road.x + road.w / 2;
-            ctx.moveTo(centerX, road.y);
-            ctx.lineTo(centerX, road.y + road.h);
+    ],
+
+    jobs: [
+        {
+            x: 740,
+            y: 700,
+            name: "Delivery Job",
+            reward: 2500,
+            completed: false
         }
-        ctx.stroke();
-        ctx.setLineDash([]);
-    }
-    // Buildings
-    for (let i = 0; i < this.buildings.length; i++) {
-        const b = this.buildings[i];
-        ctx.fillStyle = "#41464d";
-        ctx.fillRect(b.x + 8, b.y + 10, b.w, b.h);
-        ctx.fillStyle = [
-            "#c7a27c",
-            "#d1b58b",
-            "#9eacb4",
-            "#b4a18b"
-        ][i % 4];
-        ctx.fillRect(b.x, b.y, b.w, b.h);
-        // Roof
-        ctx.fillStyle = "#777b7d";
-        ctx.fillRect(b.x, b.y, b.w, 18);
-        // Windows
-        ctx.fillStyle = "#547b8c";
-        for (let wx = b.x + 18; wx < b.x + b.w - 15; wx += 40) {
-            for (let wy = b.y + 35; wy < b.y + b.h - 15; wy += 40) {
-                ctx.fillRect(wx, wy, 18, 22);
+    ],
+
+    isBlocked(x, y, player) {
+        const halfW = player.width / 2;
+        const halfH = player.height / 2;
+
+        if (
+            x - halfW < 0 ||
+            y - halfH < 0 ||
+            x + halfW > this.width ||
+            y + halfH > this.height
+        ) {
+            return true;
+        }
+
+        return this.buildings.some(building => {
+            return (
+                x + halfW > building.x &&
+                x - halfW < building.x + building.width &&
+                y + halfH > building.y &&
+                y - halfH < building.y + building.height
+            );
+        });
+    },
+
+    draw(ctx, camera, canvas) {
+        // Ground
+        ctx.fillStyle = "#b4c69a";
+        ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+        ctx.save();
+
+        ctx.translate(-camera.x, -camera.y);
+
+        // Decorative grass details
+        ctx.fillStyle = "#a4b88c";
+
+        for (let x = 20; x < this.width; x += 80) {
+            for (let y = 20; y < this.height; y += 80) {
+                ctx.fillRect(x, y, 3, 3);
             }
         }
-        // Entrance
-        ctx.fillStyle = "#49372b";
-        ctx.fillRect(
-            b.x + b.w / 2 - 12,
-            b.y + b.h - 35,
-            24,
-            35
-        );
+
+        // Main horizontal road
+        ctx.fillStyle = "#737b77";
+        ctx.fillRect(0, 600, this.width, 110);
+
+        // Road markings
+        ctx.strokeStyle = "#eee0a7";
+        ctx.lineWidth = 3;
+        ctx.setLineDash([30, 25]);
+
+        ctx.beginPath();
+        ctx.moveTo(0, 655);
+        ctx.lineTo(this.width, 655);
+        ctx.stroke();
+
+        ctx.setLineDash([]);
+
+        // Main vertical road
+        ctx.fillStyle = "#737b77";
+        ctx.fillRect(650, 0, 100, this.height);
+
+        ctx.strokeStyle = "#eee0a7";
+        ctx.lineWidth = 3;
+        ctx.setLineDash([30, 25]);
+
+        ctx.beginPath();
+        ctx.moveTo(700, 0);
+        ctx.lineTo(700, this.height);
+        ctx.stroke();
+
+        ctx.setLineDash([]);
+
+        // Buildings
+        this.buildings.forEach(building => {
+            // Shadow
+            ctx.fillStyle = "#8b967f";
+
+            ctx.fillRect(
+                building.x + 7,
+                building.y + 7,
+                building.width,
+                building.height
+            );
+
+            // Building body
+            ctx.fillStyle = building.color;
+
+            ctx.fillRect(
+                building.x,
+                building.y,
+                building.width,
+                building.height
+            );
+
+            // Roof border
+            ctx.fillStyle = "#796a53";
+
+            ctx.fillRect(
+                building.x,
+                building.y,
+                building.width,
+                8
+            );
+
+            // Windows
+            ctx.fillStyle = "#819f9b";
+
+            for (
+                let x = building.x + 20;
+                x < building.x + building.width - 15;
+                x += 45
+            ) {
+                ctx.fillRect(
+                    x,
+                    building.y + 25,
+                    24,
+                    25
+                );
+            }
+
+            // Door
+            ctx.fillStyle = "#705540";
+
+            ctx.fillRect(
+                building.x + building.width / 2 - 12,
+                building.y + building.height - 35,
+                24,
+                35
+            );
+
+            // Building name
+            ctx.fillStyle = "#272c24";
+            ctx.font = "bold 13px Arial";
+            ctx.textAlign = "center";
+
+            ctx.fillText(
+                building.name,
+                building.x + building.width / 2,
+                building.y + building.height - 45
+            );
+        });
+
+        // Job markers
+        this.jobs.forEach(job => {
+            if (job.completed) return;
+
+            const pulse = 20 + Math.sin(Date.now() / 180) * 4;
+
+            ctx.fillStyle = "rgba(245, 205, 58, 0.25)";
+            ctx.beginPath();
+
+            ctx.arc(job.x, job.y, pulse + 8, 0, Math.PI * 2);
+            ctx.fill();
+
+            ctx.fillStyle = "#f5cd3a";
+            ctx.beginPath();
+
+            ctx.arc(job.x, job.y, pulse / 2, 0, Math.PI * 2);
+            ctx.fill();
+
+            ctx.fillStyle = "#292516";
+            ctx.font = "bold 14px Arial";
+            ctx.textAlign = "center";
+
+            ctx.fillText("₦", job.x, job.y + 5);
+        });
+
+        ctx.restore();
     }
-},
-isBlocked(x, y, width = 26, height = 34) {
-    return this.buildings.some(b =>
-        x < b.x + b.w &&
-        x + width > b.x &&
-        y < b.y + b.h &&
-        y + height > b.y
-    );
-}
-
 };
-
-World.init();
