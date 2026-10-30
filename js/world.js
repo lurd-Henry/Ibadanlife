@@ -4,48 +4,77 @@ const World = {
 
     buildings: [
         {
-            x: 100, y: 100, width: 220, height: 150,
+            x: 210, y: 275, width: 220, height: 150,
             name: "MAMA PUT",
             color: "#d9b68a",
             enterable: true,
             interior: "restaurant",
             entranceX: 210,
-            entranceY: 275,
+            entranceY: 275
         },
         {
-            x: 390, y: 100, width: 190, height: 150,
+            x: 485, y: 275, width: 190, height: 150,
             name: "PROVISIONS",
-            color: "#e5ce8c"
+            color: "#e5ce8c",
+            enterable: true,
+            interior: "grocery",
+            entranceX: 485,
+            entranceY: 275
         },
         {
-            x: 100, y: 350, width: 210, height: 160,
+            x: 205, y: 540, width: 210, height: 160,
             name: "BARBER SHOP",
-            color: "#d3a58a"
+            color: "#d3a58a",
+            enterable: true,
+            interior: "barber",
+            entranceX: 205,
+            entranceY: 540
         },
         {
-            x: 390, y: 350, width: 200, height: 160,
+            x: 490, y: 540, width: 200, height: 160,
             name: "LAGOS MART",
-            color: "#d9c28e"
+            color: "#d9c28e",
+            enterable: true,
+            interior: "supermarket",
+            entranceX: 490,
+            entranceY: 540
+
         },
         {
-            x: 900, y: 100, width: 280, height: 180,
+            x: 1040, y: 310, width: 280, height: 180,
             name: "BUSINESS PLAZA",
-            color: "#b8c6b4"
+            color: "#b8c6b4",
+            enterable: true,
+            interior: "office",
+            entranceX: 1040,
+            entranceY: 310
         },
         {
-            x: 900, y: 360, width: 300, height: 170,
+            x: 1050, y: 560, width: 300, height: 170,
             name: "MOTOR PARK",
-            color: "#c6b39a"
+            color: "#c6b39a",
+            enterable: true,
+            interior: "transport",
+            entranceX: 1050,
+            entranceY: 560
         },
         {
-            x: 1450, y: 100, width: 250, height: 170,
+            x: 1575, y: 300, width: 250, height: 170,
             name: "EATERIES",
-            color: "#d9ad7f"
+            color: "#d9ad7f",
+            enterable: true,
+            interior: "eatery",
+            entranceX: 1575,
+            entranceY: 300
         },
         {
-            x: 1450, y: 370, width: 250, height: 170,
+            x: 1575, y: 570, width: 250, height: 170,
             name: "PHARMACY",
-            color: "#b9d3ae"
+            color: "#b9d3ae",
+            enterable: true,
+            interior: "pharmacy",
+            entranceX: 1575,
+            entranceY: 570
         }
     ],
 
@@ -59,9 +88,10 @@ const World = {
         }
     ],
 
-    isBlocked(x, y, player) {
-        const halfW = player.width / 2;
-        const halfH = player.height / 2;
+    // Check world boundaries and building collisions.
+    isBlocked(x, y, width, height) {
+        const halfW = width / 2;
+        const halfH = height / 2;
 
         if (
             x - halfW < 0 ||
@@ -82,16 +112,12 @@ const World = {
         });
     },
 
-    draw(ctx, camera, canvas) {
-        // Ground
+    draw(ctx) {
+        // Draw the ground across the entire world.
         ctx.fillStyle = "#b4c69a";
-        ctx.fillRect(0, 0, canvas.width, canvas.height);
+        ctx.fillRect(0, 0, this.width, this.height);
 
-        ctx.save();
-
-        ctx.translate(-camera.x, -camera.y);
-
-        // Decorative grass details
+        // Decorative grass details.
         ctx.fillStyle = "#a4b88c";
 
         for (let x = 20; x < this.width; x += 80) {
@@ -100,11 +126,11 @@ const World = {
             }
         }
 
-        // Main horizontal road
+        // Horizontal road.
         ctx.fillStyle = "#737b77";
         ctx.fillRect(0, 600, this.width, 110);
 
-        // Road markings
+        // Horizontal road markings.
         ctx.strokeStyle = "#eee0a7";
         ctx.lineWidth = 3;
         ctx.setLineDash([30, 25]);
@@ -116,10 +142,11 @@ const World = {
 
         ctx.setLineDash([]);
 
-        // Main vertical road
+        // Vertical road.
         ctx.fillStyle = "#737b77";
         ctx.fillRect(650, 0, 100, this.height);
 
+        // Vertical road markings.
         ctx.strokeStyle = "#eee0a7";
         ctx.lineWidth = 3;
         ctx.setLineDash([30, 25]);
@@ -131,9 +158,9 @@ const World = {
 
         ctx.setLineDash([]);
 
-        // Buildings
+        // Draw every building.
         this.buildings.forEach(building => {
-            // Shadow
+            // Shadow.
             ctx.fillStyle = "#8b967f";
 
             ctx.fillRect(
@@ -143,7 +170,7 @@ const World = {
                 building.height
             );
 
-            // Building body
+            // Building body.
             ctx.fillStyle = building.color;
 
             ctx.fillRect(
@@ -153,7 +180,7 @@ const World = {
                 building.height
             );
 
-            // Roof border
+            // Roof border.
             ctx.fillStyle = "#796a53";
 
             ctx.fillRect(
@@ -163,7 +190,7 @@ const World = {
                 8
             );
 
-            // Windows
+            // Windows.
             ctx.fillStyle = "#819f9b";
 
             for (
@@ -179,7 +206,7 @@ const World = {
                 );
             }
 
-            // Door
+            // Door.
             ctx.fillStyle = "#705540";
 
             ctx.fillRect(
@@ -189,7 +216,7 @@ const World = {
                 35
             );
 
-            // Building name
+            // Building name.
             ctx.fillStyle = "#272c24";
             ctx.font = "bold 13px Arial";
             ctx.textAlign = "center";
@@ -200,27 +227,8 @@ const World = {
                 building.y + building.height - 45
             );
         });
-getNearbyBuilding() {
-    return this.buildings.find(building => {
-        if (!building.enterable) return false;
 
-        const distance = Math.hypot(
-            Player.x - building.entranceX,
-            Player.y - building.entranceY
-        );
-
-        return distance < 65;
-    }) || null;
-},
-
-getEntrancePrompt() {
-    const building = this.getNearbyBuilding();
-
-    return building
-        ? `Press E to enter ${building.name}`
-        : null;
-}
-        // Job markers
+        // Draw available job markers.
         this.jobs.forEach(job => {
             if (job.completed) return;
 
@@ -228,13 +236,11 @@ getEntrancePrompt() {
 
             ctx.fillStyle = "rgba(245, 205, 58, 0.25)";
             ctx.beginPath();
-
             ctx.arc(job.x, job.y, pulse + 8, 0, Math.PI * 2);
             ctx.fill();
 
             ctx.fillStyle = "#f5cd3a";
             ctx.beginPath();
-
             ctx.arc(job.x, job.y, pulse / 2, 0, Math.PI * 2);
             ctx.fill();
 
@@ -244,7 +250,5 @@ getEntrancePrompt() {
 
             ctx.fillText("₦", job.x, job.y + 5);
         });
-
-        ctx.restore();
     }
 };
