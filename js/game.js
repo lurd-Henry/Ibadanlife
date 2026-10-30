@@ -187,22 +187,37 @@ const Game = {
     },
 
     loop(timestamp) {
-        if (!this.running) return;
+if (!this.running) return;
+if (this.paused) return;
 
-        if (this.paused) return;
+const deltaTime = this.lastTime
+    ? Math.min((timestamp - this.lastTime) / 1000, 0.05)
+    : 0;
+this.lastTime = timestamp;
+this.elapsed += deltaTime;
+this.update(deltaTime);
+this.render();
+// Temporary diagnostic overlay
+const ctx = this.ctx;
+ctx.save();
+ctx.setTransform(1, 0, 0, 1, 0, 0);
+ctx.fillStyle = "white";
+ctx.font = "16px Arial";
+ctx.fillText("GAME LOOP: RUNNING", 15, 25);
+ctx.fillText(
+    "PLAYER: " + Math.round(Player.x) + ", " + Math.round(Player.y),
+    15,
+    50
+);
+ctx.fillText(
+    "INTERIOR: " + (Interiors.active ? "YES" : "NO"),
+    15,
+    75
+);
+ctx.restore();
+requestAnimationFrame((time) => this.loop(time));
 
-        const deltaTime = this.lastTime
-            ? Math.min((timestamp - this.lastTime) / 1000, 0.05)
-            : 0;
-
-        this.lastTime = timestamp;
-        this.elapsed += deltaTime;
-
-        this.update(deltaTime);
-        this.render();
-
-        requestAnimationFrame((time) => this.loop(time));
-    },
+},
 
     update(deltaTime) {
 let dx = 0;
